@@ -1,0 +1,1549 @@
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Sistema Contable by ITCPO</title>
+<style>
+  :root {
+    --primary: #2c3e50;
+    --secondary: #34495e;
+    --accent: #3498db;
+    --light: #ecf0f1;
+    --success: #2ecc71;
+    --warning: #f1c40f;
+    --danger: #e74c3c;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    background-color: var(--light);
+    padding: 20px;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  }
+
+  .tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--primary);
+  }
+
+  .tab {
+    padding: 10px 20px;
+    cursor: pointer;
+    background: var(--primary);
+    color: white;
+    border: none;
+    margin-right: 5px;
+    border-radius: 5px 5px 0 0;
+    transition: all 0.3s ease;
+  }
+
+  .tab.active {
+    background: var(--accent);
+  }
+
+  .content {
+    display: none;
+  }
+
+  .content.active {
+    display: block;
+  }
+
+  .form-group {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+  }
+
+  input, select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 15px;
+  }
+
+  .form-row-double {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 15px;
+    margin-bottom: 15px;
+  }
+
+  .btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    color: white;
+    font-weight: bold;
+    transition: all 0.3s ease;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+  }
+
+  .btn-success {
+    background: var(--success);
+  }
+
+  .btn-warning {
+    background: var(--warning);
+  }
+
+  .btn-danger {
+    background: var(--danger);
+  }
+
+  .btn-brown {
+    background: #5D4037;
+  }
+
+  .btn-orange {
+    background: #F57C00;
+  }
+
+  .btn-black {
+    background: #212121;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+  }
+
+  th, td {
+    padding: 12px;
+    text-align: left;
+    border: 1px solid #ddd;
+  }
+
+  th {
+    background: var(--primary);
+    color: white;
+  }
+
+  .transactions-list {
+    margin-top: 20px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .transactions-list table {
+    font-size: 0.9em; 
+  }
+
+  .transactions-list td, .transactions-list th {
+    padding: 8px; 
+  }
+
+  .transactions-list .btn {
+    font-size: 0.8em;
+    padding: 4px 8px;
+    margin: 2px;
+  }
+
+  #ledger table {
+    font-size: 0.9em;
+  }
+
+  #ledger td, #ledger th {
+    padding: 8px;
+  }
+
+  #majorBookContent table {
+    font-size: 0.9em;
+  }
+
+  #majorBookContent td, #majorBookContent th {
+    padding: 8px;
+  }
+
+  #balance table {
+    font-size: 0.9em;
+  }
+
+  #balance td, #balance th {
+    padding: 8px;
+  }
+
+  #balance h3 {
+    font-size: 1.1em;
+    margin-bottom: 10px;
+  }
+
+  #balance h4 {
+    font-size: 1em;
+    margin-top: 10px;
+  }
+
+  #balance p {
+    font-size: 0.9em;
+    margin: 5px 0;
+  }
+
+  .help-button {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+  }
+
+  .help-button:hover {
+    transform: scale(1.1);
+  }
+
+  .help-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.2);
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    z-index: 1001;
+  }
+
+  .help-modal h2 {
+    color: var(--primary);
+    margin-bottom: 20px;
+  }
+
+  .help-modal h3 {
+    color: var(--accent);
+    margin: 15px 0;
+  }
+
+  .help-modal p {
+    margin: 10px 0;
+    line-height: 1.6;
+  }
+
+  .help-modal .example {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 10px 0;
+  }
+
+  .modal-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+  }
+
+  .close-modal {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--primary);
+  }
+
+  /* Add these new styles */
+  .notification-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    z-index: 2000;
+    min-width: 300px;
+    text-align: center;
+  }
+
+  .notification-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1999;
+  }
+
+  .notification-content {
+    margin: 15px 0;
+    font-size: 1.1em;
+  }
+
+  .notification-button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+  /* Add these new styles for the icons and confirmation modal */
+  .action-icon {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    margin: 0 3px;
+    font-size: 1.2em;
+    transition: transform 0.2s;
+  }
+
+  .action-icon:hover {
+    transform: scale(1.1);
+  }
+
+  .action-icon.edit {
+    color: var(--warning);
+  }
+
+  .action-icon.delete {
+    color: var(--danger); 
+  }
+
+  .confirmation-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    z-index: 2000;
+    min-width: 300px;
+    text-align: center;
+  }
+
+  .confirmation-modal .buttons {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .confirmation-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1999;
+  }
+  .clear-confirmation-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1999;
+  }
+  .clear-confirmation-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    z-index: 2000;
+    min-width: 300px;
+    text-align: center;
+  }
+  .clear-confirmation-content {
+    margin: 15px 0;
+    font-size: 1.1em;
+  }
+  .clear-confirmation-modal .buttons {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+</style>
+</head>
+<body>
+<button class="help-button" onclick="showHelp()">?</button>
+<div class="modal-backdrop" id="modalBackdrop" onclick="hideHelp()"></div>
+<div class="help-modal" id="helpModal">
+  <button class="close-modal" onclick="hideHelp()">&times;</button>
+  <h2>Guía de Registro de Transacciones</h2>
+  
+  <p>Esta guía te ayudará a entender cómo registrar correctamente las transacciones contables en el sistema.</p>
+  
+  <h3>Instrucciones Generales:</h3>
+  <p>1. Selecciona la fecha de la transacción</p>
+  <p>2. Elige el tipo de transacción (venta, compra, gasto, pago)</p>
+  <p>3. Ingresa el monto de la transacción</p>
+  <p>4. Selecciona la cuenta que "recibe" (DEBE)</p>
+  <p>5. Selecciona la cuenta que "entrega" (HABER)</p>
+  <p>6. Proporciona una descripción clara de la transacción</p>
+
+  <h3>Ejemplos Prácticos:</h3>
+  
+  <div class="example">
+    <h4>Ejemplo 1: Venta en Efectivo</h4>
+    <p>Venta de mercancía por $5,000 en efectivo</p>
+    <ul>
+      <li>Tipo: Venta</li>
+      <li>DEBE: 1.1.1.1 - Caja General ($5,000)</li>
+      <li>HABER: 4.5.1.1 - Ventas Nacionales ($5,000)</li>
+      <li>Descripción: Venta de mercancía en efectivo</li>
+    </ul>
+  </div>
+
+  <div class="example">
+    <h4>Ejemplo 2: Compra a Crédito</h4>
+    <p>Compra de equipo de cómputo a crédito por $15,000</p>
+    <ul>
+      <li>Tipo: Compra</li>
+      <li>DEBE: 1.2.3.2 - Equipo de Cómputo ($15,000)</li>
+      <li>HABER: 2.3.1.1 - Proveedores Nacionales ($15,000)</li>
+      <li>Descripción: Compra de equipo de cómputo a crédito</li>
+    </ul>
+  </div>
+
+  <div class="example">
+    <h4>Ejemplo 3: Pago de Servicios</h4>
+    <p>Pago de servicios de luz por $2,500 con cargo a banco</p>
+    <ul>
+      <li>Tipo: Gasto</li>
+      <li>DEBE: 6.7.2.4 - Luz, Agua y Teléfono ($2,500)</li>
+      <li>HABER: 1.1.2.1 - Bancos Nacionales ($2,500)</li>
+      <li>Descripción: Pago de servicio de luz mensual</li>
+    </ul>
+  </div>
+</div>
+<div class="notification-backdrop" id="notificationBackdrop"></div>
+<div class="notification-modal" id="notificationModal">
+  <div class="notification-content" id="notificationContent"></div>
+  <button class="notification-button" onclick="hideNotification()">Aceptar</button>
+</div>
+<div class="confirmation-backdrop" id="confirmationBackdrop"></div>
+<div class="confirmation-modal" id="confirmationModal">
+  <div class="confirmation-content">¿Está seguro de que desea eliminar esta transacción?</div>
+  <div class="buttons">
+    <button class="btn btn-danger" onclick="confirmDelete()">Eliminar</button>
+    <button class="btn btn-primary" onclick="cancelDelete()">Cancelar</button>
+  </div>
+</div>
+<div class="clear-confirmation-backdrop" id="clearConfirmationBackdrop" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1999;"></div>
+<div class="clear-confirmation-modal" id="clearConfirmationModal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); z-index: 2000; min-width: 300px; text-align: center;">
+  <div class="clear-confirmation-content">¿Está seguro de que desea eliminar todas las transacciones?</div>
+  <div class="buttons" style="margin-top: 20px; display: flex; justify-content: center; gap: 10px;">
+    <button class="btn btn-danger" onclick="confirmClear()">Eliminar</button>
+    <button class="btn btn-primary" onclick="cancelClear()">Cancelar</button>
+  </div>
+</div>
+<div class="container">
+  <h1 style="background-color: #f39c12; color: white; padding: 10px; border-radius: 5px; margin-bottom: 20px;">Sistema Contable by ITCPO</h1>
+  
+  <div class="tabs">
+    <button class="tab active" onclick="showTab(event, 'transactions')">Transacciones</button>
+    <button class="tab" onclick="showTab(event, 'ledger')">Libro Diario</button>
+    <button class="tab" onclick="showTab(event, 'majorBook')">Libro Mayor</button>
+    <button class="tab" onclick="showTab(event, 'balance')">Balance General</button>
+    <button class="tab" onclick="showTab(event, 'reports')">Reportes</button>
+  </div>
+
+  <div id="transactions" class="content active">
+    <h2 style="background-color: #2ecc71; color: white; padding: 10px; border-radius: 5px; margin-bottom: 20px;">Registro de Transacciones</h2>
+    <form id="transactionForm">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Fecha:</label>
+          <input type="date" id="date" required>
+        </div>
+        <div class="form-group">
+          <label>Tipo de Transacción:</label>
+          <select id="type" required>
+            <option value="">Seleccione tipo...</option>
+            <option value="venta">Venta</option>
+            <option value="compra">Compra</option>
+            <option value="gasto">Gasto</option>
+            <option value="pago">Pago</option>
+            <option value="credito">Crédito</option>
+            <option value="inversion">Inversión</option>
+            <option value="financiamiento">Financiamiento</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Monto:</label>
+          <input type="number" id="amount" required min="0" step="0.01">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Cuenta Debe:</label>
+          <select id="debitAccount" required></select>
+        </div>
+        <div class="form-group">
+          <label>Cuenta Haber:</label>
+          <select id="creditAccount" required></select>
+        </div>
+        <div class="form-group">
+          <label>Descripción:</label>
+          <input type="text" id="description" required>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button type="submit" class="btn btn-primary">Registrar Transacción</button>
+        <button type="button" onclick="addExampleTransactions()" class="btn btn-success">Ejemplo</button>
+        <button type="button" onclick="clearExampleTransactions()" class="btn btn-primary">Limpiar</button>
+      </div>
+
+    </form>
+
+    <div class="transactions-list">
+      <h3 style="background-color: #f39c12; color: white; padding: 10px; border-radius: 5px; margin-bottom: 20px;">Transacciones Registradas</h3>
+      <table id="transactionsTable">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Debe</th>
+            <th>Haber</th>
+            <th>Monto</th>
+            <th>Descripción</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="ledger" class="content">
+    <h2>Libro Diario</h2>
+    <table id="ledgerTable">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Descripción</th>
+          <th>Cuenta</th>
+          <th>Debe</th>
+          <th>Haber</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="majorBook" class="content">
+    <h2>Libro Mayor</h2>
+    <div id="majorBookContent"></div>
+  </div>
+
+  <div id="balance" class="content">
+    <h2>Balance General</h2>
+    <table id="balanceTable">
+      <thead>
+        <tr>
+          <th>Activo</th>
+          <th>Pasivo y Capital</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="reports" class="content">
+    <h2>Reportes en PDF</h2>
+    <div class="form-row" style="margin-top: 20px;">
+      <div class="form-group">
+        <button onclick="generateLedgerPDF()" class="btn btn-brown">
+          <i class="fas fa-file-pdf"></i> Generar Libro Diario
+        </button>
+      </div>
+      <div class="form-group">
+        <button onclick="generateMajorBookPDF()" class="btn btn-orange">
+          <i class="fas fa-file-pdf"></i> Generar Libro Mayor
+        </button>
+      </div>
+      <div class="form-group">
+        <button onclick="generateBalancePDF()" class="btn btn-black">
+          <i class="fas fa-file-pdf"></i> Generar Balance General
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top: 20px;">
+    <button onclick="saveData()" class="btn btn-primary">Guardar Datos</button>
+    <button onclick="exportToJSON()" class="btn btn-success">Exportar JSON</button>
+    <button onclick="exportToExcel()" class="btn btn-warning">Exportar Excel</button>
+    <button onclick="importJSON()" class="btn btn-warning">Importar JSON</button>
+    <input type="file" id="jsonInput" style="display: none;" accept=".json">
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+<script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+
+<script>
+function formatMoney(amount) {
+  return amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+const accounts = {
+  activo: [
+    '1.1.0.0 - Activo Circulante',
+    '1.1.1.0 - Caja',
+    '1.1.1.1 - Caja General',
+    '1.1.2.0 - Bancos',
+    '1.1.2.1 - Bancos Nacionales',
+    '1.1.2.2 - Bancos Extranjeros',
+    '1.1.3.0 - Clientes',
+    '1.1.3.1 - Clientes Nacionales', 
+    '1.1.3.2 - Clientes Internacionales',
+    '1.1.4.0 - Documentos por Cobrar',
+    '1.1.5.0 - IVA Acreditable',
+    '1.1.6.0 - Inventarios',
+    '1.1.6.1 - Inventario de Productos Terminados',
+    '1.1.6.2 - Inventario de Materia Prima',
+    '1.2.0.0 - Activo No Circulante',
+    '1.2.1.0 - Terrenos',
+    '1.2.2.0 - Edificios',
+    '1.2.3.0 - Mobiliario y Equipo',
+    '1.2.3.1 - Mobiliario de Oficina',
+    '1.2.3.2 - Equipo de Cómputo',
+    '1.2.4.0 - Vehículos',
+    '1.2.5.0 - Depreciación Acumulada'
+  ],
+  pasivo: [
+    '2.3.0.0 - Pasivo Circulante',
+    '2.3.1.0 - Proveedores',
+    '2.3.1.1 - Proveedores Nacionales',
+    '2.3.1.2 - Proveedores Internacionales', 
+    '2.3.2.0 - Documentos por Pagar',
+    '2.3.3.0 - Acreedores Diversos',
+    '2.3.4.0 - IVA por Pagar'
+  ],
+  capital: [
+    '3.4.0.0 - Capital',
+    '3.4.1.0 - Capital Social',
+    '3.4.2.0 - Reservas de Capital'
+  ],
+  resultados: [
+    '4.5.0.0 - Ingresos',
+    '4.5.1.0 - Ventas',
+    '4.5.1.1 - Ventas Nacionales',
+    '4.5.1.2 - Ventas Internacionales',
+    '4.5.2.0 - Devoluciones sobre Ventas',
+    '5.6.0.0 - Costo de Ventas',
+    '6.7.0.0 - Gastos Operativos',
+    '6.7.1.0 - Gastos de Administración',
+    '6.7.2.0 - Gastos de Ventas',
+    '6.7.2.1 - Sueldos y Salarios',
+    '6.7.2.2 - Publicidad y Promoción',
+    '6.7.2.3 - Servicios Generales',
+    '6.7.2.4 - Luz, Agua y Teléfono',
+    '6.7.3.0 - Mantenimiento de Equipo',
+    '7.8.0.0 - Otros Ingresos',
+    '7.8.1.0 - Otros Gastos'
+  ]
+};
+
+let transactions = [];
+
+// Inicialización
+document.addEventListener('DOMContentLoaded', () => {
+  populateAccountSelects();
+  loadFromLocalStorage();
+  document.getElementById('transactionForm').addEventListener('submit', handleTransaction);
+});
+
+function populateAccountSelects() {
+  const debitSelect = document.getElementById('debitAccount');
+  const creditSelect = document.getElementById('creditAccount');
+  
+  // Clear existing options
+  debitSelect.innerHTML = '<option value="">Seleccione cuenta...</option>';
+  creditSelect.innerHTML = '<option value="">Seleccione cuenta...</option>';
+  
+  // Add all accounts from catalog
+  Object.values(accounts).flat().forEach(account => {
+    if (!account || !account.trim()) return; // Skip empty accounts
+    debitSelect.add(new Option(account, account));
+    creditSelect.add(new Option(account, account));
+  });
+}
+
+function showTab(event, tabName) {
+  document.querySelectorAll('.content').forEach(content => content.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+  
+  document.getElementById(tabName).classList.add('active');
+  event.target.classList.add('active');
+  
+  if (tabName === 'ledger') updateLedger();
+  if (tabName === 'majorBook') updateMajorBook();
+  if (tabName === 'balance') updateBalance();
+}
+
+function handleTransaction(e) {
+  e.preventDefault();
+  
+  const debitAccount = document.getElementById('debitAccount').value;
+  const creditAccount = document.getElementById('creditAccount').value;
+
+  // Validate accounts exist in catalog
+  const allAccounts = Object.values(accounts).flat();
+  if (!allAccounts.includes(debitAccount) || !allAccounts.includes(creditAccount)) {
+    showNotification('Por favor seleccione cuentas válidas del catálogo cargado');
+    return;
+  }
+
+  const transaction = {
+    date: document.getElementById('date').value,
+    type: document.getElementById('type').value,
+    debitAccount: debitAccount,
+    creditAccount: creditAccount,
+    amount: parseFloat(document.getElementById('amount').value),
+    description: document.getElementById('description').value,
+    debitCode: debitAccount.split(' - ')[0],
+    creditCode: creditAccount.split(' - ')[0]
+  };
+
+  transactions.push(transaction);
+  updateTransactionsTable();
+  saveToLocalStorage();
+  e.target.reset();
+}
+
+function updateTransactionsTable() {
+  const tbody = document.querySelector('#transactionsTable tbody');
+  tbody.innerHTML = '';
+  
+  transactions.forEach((t, index) => {
+    const row = tbody.insertRow();
+    row.innerHTML = `
+      <td>${t.date}</td>
+      <td>${t.type}</td>
+      <td>${t.debitAccount}</td>
+      <td>${t.creditAccount}</td>
+      <td>$${formatMoney(t.amount)}</td>
+      <td>${t.description}</td>
+      <td>
+        <button class="action-icon edit" onclick="editTransaction(${index})" title="Editar">
+          ✏️
+        </button>
+        <button class="action-icon delete" onclick="showDeleteConfirmation(${index})" title="Eliminar">
+          🗑️
+        </button>
+      </td>
+    `;
+  });
+}
+
+function editTransaction(index) {
+  const transaction = transactions[index];
+  
+  // Validate accounts exist in current catalog
+  const allAccounts = Object.values(accounts).flat();
+  if (!allAccounts.includes(transaction.debitAccount) || 
+      !allAccounts.includes(transaction.creditAccount)) {
+    showNotification('Esta transacción contiene cuentas que no existen en el catálogo actual');
+    return;
+  }
+  
+  // Fill form with transaction data
+  document.getElementById('date').value = transaction.date;
+  document.getElementById('type').value = transaction.type;
+  document.getElementById('debitAccount').value = transaction.debitAccount;
+  document.getElementById('creditAccount').value = transaction.creditAccount;
+  document.getElementById('amount').value = transaction.amount;
+  document.getElementById('description').value = transaction.description;
+  
+  transactions.splice(index, 1);
+  updateTransactionsTable();
+  saveToLocalStorage();
+}
+
+function updateLedger() {
+  const tbody = document.querySelector('#ledgerTable tbody');
+  tbody.innerHTML = '';
+  
+  transactions.forEach(t => {
+    // Get account types
+    let debitType = '';
+    let creditType = '';
+    
+    // Determine account types
+    for (const [type, accountList] of Object.entries(accounts)) {
+      if (accountList.includes(t.debitAccount)) debitType = type;
+      if (accountList.includes(t.creditAccount)) creditType = type;
+    }
+
+    // Entrada debe
+    const debitRow = tbody.insertRow();
+      debitRow.innerHTML = `
+        <td>${t.date} - ${debitType}</td>
+        <td>${t.description}</td>
+        <td>${t.debitAccount}</td>
+        <td>$${formatMoney(t.amount)}</td>
+        <td></td>
+      `;
+
+    // Entrada haber
+    const creditRow = tbody.insertRow();
+      creditRow.innerHTML = `
+        <td>${t.date} - ${creditType}</td>
+        <td>${t.description}</td>
+        <td>${t.creditAccount}</td>
+        <td></td>
+        <td>$${formatMoney(t.amount)}</td>
+      `;
+  });
+}
+
+function updateMajorBook() {
+  const accountLedgers = {};
+  
+  // Initialize account ledgers only for accounts that exist in the catalog
+  Object.values(accounts).flat().forEach(account => {
+    if (account) { // Check if account exists
+      accountLedgers[account] = {
+        transactions: [],
+        balance: 0
+      };
+    }
+  });
+  
+  // Group transactions by account
+  transactions.forEach(t => {
+    if (!accountLedgers[t.debitAccount]) return; // Skip if account doesn't exist
+    if (!accountLedgers[t.creditAccount]) return; // Skip if account doesn't exist
+    
+    // Add debit entry
+    accountLedgers[t.debitAccount].transactions.push({
+      date: t.date,
+      description: t.description,
+      debit: t.amount,
+      credit: 0
+    });
+    accountLedgers[t.debitAccount].balance += t.amount;
+    
+    // Add credit entry
+    accountLedgers[t.creditAccount].transactions.push({
+      date: t.date,
+      description: t.description,  
+      debit: 0,
+      credit: t.amount
+    });
+    accountLedgers[t.creditAccount].balance -= t.amount;
+  });
+  
+  // Generate HTML for each account
+  const majorBookContent = document.getElementById('majorBookContent');
+  majorBookContent.innerHTML = '';
+  
+  Object.entries(accountLedgers).forEach(([account, data]) => {
+    if (!account || !data || data.transactions.length === 0) return; // Skip invalid or empty accounts
+    
+    const accountDiv = document.createElement('div');
+    accountDiv.innerHTML = `
+      <h3 style="margin-top: 20px; margin-bottom: 10px;">${account}</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Descripción</th>
+            <th>Debe</th>
+            <th>Haber</th>
+            <th>Saldo</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.transactions.map(t => `
+            <tr>
+              <td>${t.date}</td>
+              <td>${t.description}</td>
+              <td>${t.debit ? '$' + formatMoney(t.debit) : ''}</td>
+              <td>${t.credit ? '$' + formatMoney(t.credit) : ''}</td>
+              <td>$${formatMoney(Math.abs(data.balance))}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+    
+    majorBookContent.appendChild(accountDiv);
+  });
+}
+
+function updateBalance() {
+  const balances = {};
+  
+  // Calculate balances
+  transactions.forEach(t => {
+    if (!balances[t.debitAccount]) balances[t.debitAccount] = 0;
+    if (!balances[t.creditAccount]) balances[t.creditAccount] = 0;
+    
+    balances[t.debitAccount] += t.amount;
+    balances[t.creditAccount] -= t.amount;
+  });
+  
+  const tbody = document.querySelector('#balanceTable tbody');
+  tbody.innerHTML = '';
+  
+  let totalActivos = 0;
+  let totalPasivos = 0;
+  let totalCapital = 0;
+  
+  // Create balance sheet row
+  const balanceRow = tbody.insertRow();
+  const activosCell = balanceRow.insertCell();
+  const pasivoCapitalCell = balanceRow.insertCell();
+  
+  let activosHTML = '<h3 style="color: #34495e; font-weight: 800; border-bottom: 2px solid #34495e; padding-bottom: 5px; margin-bottom: 15px;">Activos</h3>';
+  let pasivosHTML = '<h3 style="color: #34495e; font-weight: 800; border-bottom: 2px solid #34495e; padding-bottom: 5px; margin-bottom: 15px;">Pasivos</h3>';
+  let capitalHTML = '<h3 style="color: #34495e; font-weight: 800; border-bottom: 2px solid #34495e; padding-bottom: 5px; margin: 25px 0 15px 0;">Capital</h3>';
+  
+  // Process accounts by type
+  Object.entries(balances).forEach(([account, balance]) => {
+    if (balance === 0) return; // Skip accounts with zero balance
+    
+    const formattedAmount = `<span style="float: right;">$${formatMoney(Math.abs(balance))}</span>`;
+    
+    if (accounts.activo.includes(account)) {
+      activosHTML += `<p style="margin: 8px 0; padding: 5px 0; border-bottom: 1px solid #eee;">${account}${formattedAmount}</p>`;
+      totalActivos += balance;
+    }
+    if (accounts.pasivo.includes(account)) {
+      pasivosHTML += `<p style="margin: 8px 0; padding: 5px 0; border-bottom: 1px solid #eee;">${account}${formattedAmount}</p>`;
+      totalPasivos += Math.abs(balance);
+    }
+    if (accounts.capital.includes(account)) {
+      capitalHTML += `<p style="margin: 8px 0; padding: 5px 0; border-bottom: 1px solid #eee;">${account}${formattedAmount}</p>`;
+      totalCapital += Math.abs(balance);
+    }
+    if (accounts.resultados.includes(account)) {
+      let isPositive = account.includes('Ventas');
+      if (isPositive) {
+        totalCapital += Math.abs(balance);
+      } else {
+        totalCapital -= Math.abs(balance);
+      }
+      capitalHTML += `<p style="margin: 8px 0; padding: 5px 0; border-bottom: 1px solid #eee;">${account}${formattedAmount}</p>`;
+    }
+  });
+  
+  activosHTML += `<h4 style="margin-top: 15px; padding-top: 10px; border-top: 2px solid #34495e; color: #2c3e50; font-weight: 700;">Total Activos: <span style="float: right;">$${formatMoney(Math.abs(totalActivos))}</span></h4>`;
+  pasivosHTML += `<h4 style="margin-top: 15px; padding-top: 10px; border-top: 2px solid #34495e; color: #2c3e50; font-weight: 700;">Total Pasivos: <span style="float: right;">$${formatMoney(Math.abs(totalPasivos))}</span></h4>`;
+  capitalHTML += `<h4 style="margin-top: 15px; padding-top: 10px; border-top: 2px solid #34495e; color: #2c3e50; font-weight: 700;">Total Capital: <span style="float: right;">$${formatMoney(Math.abs(totalCapital))}</span></h4>`;
+  
+  activosCell.innerHTML = `<div style="padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">${activosHTML}</div>`;
+  pasivoCapitalCell.innerHTML = `<div style="padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">${pasivosHTML}${capitalHTML}</div>`;
+  
+  // Add total pasivo + capital
+  pasivoCapitalCell.innerHTML += `<h4 style="margin-top: 20px; padding: 15px; background: #34495e; color: white; border-radius: 8px; text-align: right;">Total Pasivo + Capital: $${formatMoney(Math.abs(totalPasivos) + Math.abs(totalCapital))}</h4>`;
+}
+
+function saveToLocalStorage() {
+  localStorage.setItem('accountingTransactions', JSON.stringify(transactions));
+}
+
+function loadFromLocalStorage() {
+  const saved = localStorage.getItem('accountingTransactions');
+  if (saved) {
+    transactions = JSON.parse(saved);
+    updateTransactionsTable();
+  }
+}
+
+function saveData() {
+  saveToLocalStorage();
+  showNotification('Datos guardados exitosamente');
+}
+
+function exportToJSON() {
+  const dataStr = JSON.stringify(transactions, null, 2);
+  const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+  
+  const exportFileDefaultName = 'transactions.json';
+  
+  const linkElement = document.createElement('a');
+  linkElement.setAttribute('href', dataUri);
+  linkElement.setAttribute('download', exportFileDefaultName);
+  linkElement.click();
+}
+
+function importJSON() {
+  document.getElementById('jsonInput').click();
+}
+
+document.getElementById('jsonInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  const reader = new FileReader();
+  
+  reader.onload = function(e) {
+    try {
+      transactions = JSON.parse(e.target.result);
+      updateTransactionsTable();
+      saveToLocalStorage();
+      showNotification('Datos importados exitosamente');
+    } catch (error) {
+      showNotification('Error al importar el archivo JSON');
+    }
+  };
+  
+  reader.readAsText(file);
+});
+
+function exportToExcel() {
+  // Create workbook
+  const wb = XLSX.utils.book_new();
+  
+  // Generate Libro Diario data
+  const diarioData = [['Fecha', 'Descripción', 'Cuenta', 'Debe', 'Haber']];
+  transactions.forEach(t => {
+    diarioData.push([
+      t.date,
+      t.description,
+      t.debitAccount,
+      t.amount.toFixed(2),
+      ''
+    ]);
+    diarioData.push([
+      t.date,
+      t.description,
+      t.creditAccount,
+      '',
+      t.amount.toFixed(2)
+    ]);
+  });
+  
+  // Generate Libro Mayor data
+  const accountLedgers = {};
+  Object.values(accounts).flat().forEach(account => {
+    if (account) {
+      accountLedgers[account] = {
+        transactions: [],
+        balance: 0
+      };
+    }
+  });
+
+  transactions.forEach(t => {
+    if (accountLedgers[t.debitAccount]) {
+      accountLedgers[t.debitAccount].transactions.push({
+        date: t.date,
+        description: t.description,
+        debit: t.amount,
+        credit: 0
+      });
+      accountLedgers[t.debitAccount].balance += t.amount;
+    }
+    
+    if (accountLedgers[t.creditAccount]) {
+      accountLedgers[t.creditAccount].transactions.push({
+        date: t.date,
+        description: t.description,
+        debit: 0,
+        credit: t.amount
+      });
+      accountLedgers[t.creditAccount].balance -= t.amount;
+    }
+  });
+
+  const mayorData = [['Cuenta', 'Fecha', 'Descripción', 'Debe', 'Haber', 'Saldo']];
+  Object.entries(accountLedgers).forEach(([account, data]) => {
+    if (data.transactions.length > 0) {
+      data.transactions.forEach(t => {
+        mayorData.push([
+          account,
+          t.date,
+          t.description,
+          t.debit ? t.debit.toFixed(2) : '',
+          t.credit ? t.credit.toFixed(2) : '',
+          Math.abs(data.balance).toFixed(2)
+        ]);
+      });
+    }
+  });
+
+  // Generate Balance General data
+  const balances = {};
+  transactions.forEach(t => {
+    if (!balances[t.debitAccount]) balances[t.debitAccount] = 0;
+    if (!balances[t.creditAccount]) balances[t.creditAccount] = 0;
+    
+    balances[t.debitAccount] += t.amount;
+    balances[t.creditAccount] -= t.amount;
+  });
+
+  let totalActivos = 0;
+  let totalPasivos = 0;
+  let totalCapital = 0;
+
+  const balanceData = [['Tipo', 'Cuenta', 'Monto']];
+
+  Object.entries(balances).forEach(([account, balance]) => {
+    if (balance === 0) return;
+
+    if (accounts.activo.includes(account)) {
+      balanceData.push(['Activo', account, Math.abs(balance).toFixed(2)]);
+      totalActivos += balance;
+    }
+    if (accounts.pasivo.includes(account)) {
+      balanceData.push(['Pasivo', account, Math.abs(balance).toFixed(2)]);
+      totalPasivos += Math.abs(balance);
+    }
+    if (accounts.capital.includes(account)) {
+      balanceData.push(['Capital', account, Math.abs(balance).toFixed(2)]);
+      totalCapital += Math.abs(balance);
+    }
+    if (accounts.resultados.includes(account)) {
+      balanceData.push(['Capital', account, Math.abs(balance).toFixed(2)]);
+      if (account.includes('Ventas')) {
+        totalCapital += Math.abs(balance);
+      } else {
+        totalCapital -= Math.abs(balance);
+      }
+    }
+  });
+
+  balanceData.push(['Totales', 'Total Activos', Math.abs(totalActivos).toFixed(2)]);
+  balanceData.push(['Totales', 'Total Pasivos', Math.abs(totalPasivos).toFixed(2)]);
+  balanceData.push(['Totales', 'Total Capital', Math.abs(totalCapital).toFixed(2)]);
+  balanceData.push(['Totales', 'Total Pasivo + Capital', (Math.abs(totalPasivos) + Math.abs(totalCapital)).toFixed(2)]);
+
+  // Create worksheets
+  const wsDiario = XLSX.utils.aoa_to_sheet(diarioData);
+  const wsMayor = XLSX.utils.aoa_to_sheet(mayorData);
+  const wsBalance = XLSX.utils.aoa_to_sheet(balanceData);
+
+  // Add worksheets to workbook
+  XLSX.utils.book_append_sheet(wb, wsDiario, "Libro Diario");
+  XLSX.utils.book_append_sheet(wb, wsMayor, "Libro Mayor");
+  XLSX.utils.book_append_sheet(wb, wsBalance, "Balance General");
+
+  // Save workbook
+  XLSX.writeFile(wb, "sistema_contable.xlsx");
+  showNotification('Archivo Excel generado exitosamente');
+}
+
+function showHelp() {
+  document.getElementById('helpModal').style.display = 'block';
+  document.getElementById('modalBackdrop').style.display = 'block';
+}
+
+function hideHelp() {
+  document.getElementById('helpModal').style.display = 'none';
+  document.getElementById('modalBackdrop').style.display = 'none';
+}
+
+function showNotification(message) {
+  document.getElementById('notificationContent').textContent = message;
+  document.getElementById('notificationModal').style.display = 'block';
+  document.getElementById('notificationBackdrop').style.display = 'block';
+}
+
+function hideNotification() {
+  document.getElementById('notificationModal').style.display = 'none';
+  document.getElementById('notificationBackdrop').style.display = 'none';
+}
+
+let transactionToDelete = null;
+
+function showDeleteConfirmation(index) {
+  transactionToDelete = index;
+  document.getElementById('confirmationModal').style.display = 'block';
+  document.getElementById('confirmationBackdrop').style.display = 'block';
+}
+
+function confirmDelete() {
+  if (transactionToDelete !== null) {
+    transactions.splice(transactionToDelete, 1);
+    updateTransactionsTable();
+    saveToLocalStorage();
+    hideDeleteConfirmation();
+    showNotification('Transacción eliminada exitosamente');
+  }
+}
+
+function cancelDelete() {
+  hideDeleteConfirmation();
+}
+
+function hideDeleteConfirmation() {
+  document.getElementById('confirmationModal').style.display = 'none';
+  document.getElementById('confirmationBackdrop').style.display = 'none';
+  transactionToDelete = null;
+}
+
+function addExampleTransactions() {
+  const today = new Date().toISOString().split('T')[0];
+  
+  const exampleTransactions = [
+    {
+      date: today,
+      type: 'venta',
+      debitAccount: '1.1.1.1 - Caja General',
+      creditAccount: '4.5.1.1 - Ventas Nacionales',
+      amount: 5000,
+      description: 'Venta de mercancía en efectivo',
+      debitCode: '1.1.1.1',
+      creditCode: '4.5.1.1'
+    },
+    {
+      date: today,
+      type: 'compra',
+      debitAccount: '1.2.3.2 - Equipo de Cómputo',
+      creditAccount: '2.3.1.1 - Proveedores Nacionales',
+      amount: 15000,
+      description: 'Compra de equipo de cómputo a crédito',
+      debitCode: '1.2.3.2',
+      creditCode: '2.3.1.1'
+    },
+    {
+      date: today,
+      type: 'gasto',
+      debitAccount: '6.7.2.4 - Luz, Agua y Teléfono',
+      creditAccount: '1.1.2.1 - Bancos Nacionales',
+      amount: 2500,
+      description: 'Pago de servicio de luz mensual',
+      debitCode: '6.7.2.4',
+      creditCode: '1.1.2.1'
+    },
+    {
+      date: today,
+      type: 'pago',
+      debitAccount: '2.3.1.1 - Proveedores Nacionales',
+      creditAccount: '1.1.2.1 - Bancos Nacionales',
+      amount: 8000,
+      description: 'Pago a proveedor por mercancía',
+      debitCode: '2.3.1.1',
+      creditCode: '1.1.2.1'
+    },
+    {
+      date: today,
+      type: 'credito',
+      debitAccount: '1.1.3.1 - Clientes Nacionales',
+      creditAccount: '4.5.1.1 - Ventas Nacionales',
+      amount: 12000,
+      description: 'Venta a crédito a cliente',
+      debitCode: '1.1.3.1',
+      creditCode: '4.5.1.1'
+    },
+    {
+      date: today,
+      type: 'inversion',
+      debitAccount: '1.1.2.1 - Bancos Nacionales',
+      creditAccount: '3.4.1.0 - Capital Social',
+      amount: 50000,
+      description: 'Inversión de accionistas',
+      debitCode: '1.1.2.1',
+      creditCode: '3.4.1.0'
+    },
+    {
+      date: today,
+      type: 'financiamiento',
+      debitAccount: '1.1.2.1 - Bancos Nacionales',
+      creditAccount: '2.3.2.0 - Documentos por Pagar',
+      amount: 100000,
+      description: 'Préstamo bancario recibido',
+      debitCode: '1.1.2.1',
+      creditCode: '2.3.2.0'
+    }
+  ];
+
+  transactions.push(...exampleTransactions);
+  updateTransactionsTable();
+  saveToLocalStorage();
+  showNotification('Se agregaron 7 transacciones de ejemplo');
+}
+
+function clearExampleTransactions() {
+  document.getElementById('clearConfirmationModal').style.display = 'block';
+  document.getElementById('clearConfirmationBackdrop').style.display = 'block';
+}
+
+function confirmClear() {
+  transactions = [];
+  updateTransactionsTable();
+  saveToLocalStorage();
+  hideClearConfirmation();
+  showNotification('Se han eliminado todas las transacciones');
+}
+
+function cancelClear() {
+  hideClearConfirmation();
+}
+
+function hideClearConfirmation() {
+  document.getElementById('clearConfirmationModal').style.display = 'none';
+  document.getElementById('clearConfirmationBackdrop').style.display = 'none';
+}
+
+function generateLedgerPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  
+  doc.setFontSize(16);
+  doc.text('Libro Diario', 14, 15);
+  
+  const tableData = [];
+  transactions.forEach(t => {
+    tableData.push([
+      t.date,
+      t.description,
+      t.debitAccount,
+      `$${formatMoney(t.amount)}`,
+      ''
+    ]);
+    tableData.push([
+      t.date,
+      t.description,
+      t.creditAccount,
+      '',
+      `$${formatMoney(t.amount)}`
+    ]);
+  });
+
+  doc.autoTable({
+    startY: 25,
+    head: [['Fecha', 'Descripción', 'Cuenta', 'Debe', 'Haber']],
+    body: tableData,
+    theme: 'grid',
+    styles: { fontSize: 8 }
+  });
+
+  doc.save('libro_diario.pdf');
+  showNotification('PDF del Libro Diario generado exitosamente');
+}
+
+function generateMajorBookPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  
+  doc.setFontSize(16);
+  doc.text('Libro Mayor', 14, 15);
+  
+  let yPosition = 25;
+  
+  const accountLedgers = {};
+  Object.values(accounts).flat().forEach(account => {
+    if (account) {
+      accountLedgers[account] = {
+        transactions: [],
+        balance: 0
+      };
+    }
+  });
+
+  transactions.forEach(t => {
+    if (accountLedgers[t.debitAccount]) {
+      accountLedgers[t.debitAccount].transactions.push({
+        date: t.date,
+        description: t.description,
+        debit: t.amount,
+        credit: 0
+      });
+      accountLedgers[t.debitAccount].balance += t.amount;
+    }
+    
+    if (accountLedgers[t.creditAccount]) {
+      accountLedgers[t.creditAccount].transactions.push({
+        date: t.date,
+        description: t.description,
+        debit: 0,
+        credit: t.amount
+      });
+      accountLedgers[t.creditAccount].balance -= t.amount;
+    }
+  });
+
+  Object.entries(accountLedgers).forEach(([account, data]) => {
+    if (data.transactions.length > 0) {
+      if (yPosition > 250) {
+        doc.addPage();
+        yPosition = 25;
+      }
+
+      doc.setFontSize(12);
+      doc.text(account, 14, yPosition);
+      
+      const tableData = data.transactions.map(t => [
+        t.date,
+        t.description,
+        t.debit ? `$${formatMoney(t.debit)}` : '',
+        t.credit ? `$${formatMoney(t.credit)}` : '',
+        `$${formatMoney(Math.abs(data.balance))}`
+      ]);
+
+      doc.autoTable({
+        startY: yPosition + 5,
+        head: [['Fecha', 'Descripción', 'Debe', 'Haber', 'Saldo']],
+        body: tableData,
+        theme: 'grid',
+        styles: { fontSize: 8 }
+      });
+
+      yPosition = doc.lastAutoTable.finalY + 20;
+    }
+  });
+
+  doc.save('libro_mayor.pdf');
+  showNotification('PDF del Libro Mayor generado exitosamente');
+}
+
+function generateBalancePDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  
+  doc.setFontSize(16);
+  doc.text('Balance General', 14, 15);
+
+  const balances = {};
+  transactions.forEach(t => {
+    if (!balances[t.debitAccount]) balances[t.debitAccount] = 0;
+    if (!balances[t.creditAccount]) balances[t.creditAccount] = 0;
+    
+    balances[t.debitAccount] += t.amount;
+    balances[t.creditAccount] -= t.amount;
+  });
+
+  let totalActivos = 0;
+  let totalPasivos = 0;
+  let totalCapital = 0;
+
+  const activosData = [];
+  const pasivosData = [];
+  const capitalData = [];
+
+  Object.entries(balances).forEach(([account, balance]) => {
+    if (balance === 0) return;
+
+    if (accounts.activo.includes(account)) {
+      activosData.push([account, `$${formatMoney(Math.abs(balance))}`]);
+      totalActivos += balance;
+    }
+    if (accounts.pasivo.includes(account)) {
+      pasivosData.push([account, `$${formatMoney(Math.abs(balance))}`]);
+      totalPasivos += Math.abs(balance);
+    }
+    if (accounts.capital.includes(account)) {
+      capitalData.push([account, `$${formatMoney(Math.abs(balance))}`]);
+      totalCapital += Math.abs(balance);
+    }
+    if (accounts.resultados.includes(account)) {
+      capitalData.push([account, `$${formatMoney(Math.abs(balance))}`]);
+      if (account.includes('Ventas')) {
+        totalCapital += Math.abs(balance);
+      } else {
+        totalCapital -= Math.abs(balance);
+      }
+    }
+  });
+
+  activosData.push(['Total Activos', `$${formatMoney(Math.abs(totalActivos))}`]);
+  pasivosData.push(['Total Pasivos', `$${formatMoney(Math.abs(totalPasivos))}`]);
+  capitalData.push(['Total Capital', `$${formatMoney(Math.abs(totalCapital))}`]);
+  
+  doc.setFontSize(14);
+  doc.text('Activos', 14, 30);
+  doc.autoTable({
+    startY: 35,
+    head: [['Cuenta', 'Monto']],
+    body: activosData,
+    theme: 'grid',
+    styles: { fontSize: 8 }
+  });
+
+  doc.text('Pasivos', 14, doc.lastAutoTable.finalY + 15);
+  doc.autoTable({
+    startY: doc.lastAutoTable.finalY + 20,
+    head: [['Cuenta', 'Monto']],
+    body: pasivosData,
+    theme: 'grid',
+    styles: { fontSize: 8 }
+  });
+
+  doc.text('Capital', 14, doc.lastAutoTable.finalY + 15);
+  doc.autoTable({
+    startY: doc.lastAutoTable.finalY + 20,
+    head: [['Cuenta', 'Monto']],
+    body: capitalData,
+    theme: 'grid',
+    styles: { fontSize: 8 }
+  });
+
+  doc.setFontSize(12);
+  doc.text(`Total Pasivo + Capital: $${formatMoney(Math.abs(totalPasivos) + Math.abs(totalCapital))}`, 14, doc.lastAutoTable.finalY + 15);
+
+  doc.save('balance_general.pdf');
+  showNotification('PDF del Balance General generado exitosamente');
+}
+</script>
+</body>
+</html>
