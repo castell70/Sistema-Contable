@@ -211,6 +211,26 @@
     margin: 5px 0;
   }
 
+  /* Products list two-column layout */
+  #productsList {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 0;
+  }
+
+  .product-item {
+    padding: 8px;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    background: #fff;
+  }
+
+  .product-item strong {
+    display: block;
+    margin-bottom: 6px;
+  }
+
   .help-button {
     position: fixed;
     top: 20px;
@@ -480,6 +500,7 @@
       <li>Descripción: Pago de servicio de luz mensual</li>
     </ul>
   </div>
+  <p style="margin-top:20px; font-size:0.9em; color:#666; border-top:1px solid #eee; padding-top:10px;">© Derechos reservados a Carlos Alfredo Castillo Flores - ITCPO - 2025</p>
 </div>
 <div class="notification-backdrop" id="notificationBackdrop"></div>
 <div class="notification-modal" id="notificationModal">
@@ -506,14 +527,47 @@
   <h1 style="background-color: #f39c12; color: white; padding: 10px; border-radius: 5px; margin-bottom: 20px;">Sistema Contable by ITCPO</h1>
   
   <div class="tabs">
-    <button class="tab active" onclick="showTab(event, 'transactions')">Transacciones</button>
+    <button class="tab active" onclick="showTab(event, 'sales')">Ventas</button>
+    <button class="tab" onclick="showTab(event, 'transactions')">Transacciones</button>
     <button class="tab" onclick="showTab(event, 'ledger')">Libro Diario</button>
     <button class="tab" onclick="showTab(event, 'majorBook')">Libro Mayor</button>
     <button class="tab" onclick="showTab(event, 'balance')">Balance General</button>
     <button class="tab" onclick="showTab(event, 'reports')">Reportes</button>
   </div>
 
-  <div id="transactions" class="content active">
+  <div id="sales" class="content active">
+    <h2 style="background-color: #1abc9c; color: white; padding: 10px; border-radius: 5px; margin-bottom: 20px;">Ventas - Facturación</h2>
+    <div style="display:flex; gap:20px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:260px;">
+        <h3 style="margin-bottom:10px;">Productos Disponibles</h3>
+        <ul id="productsList" style="list-style:none; padding:0;"></ul>
+      </div>
+      <div style="flex:1; min-width:280px;">
+        <h3 style="margin-bottom:10px;">Factura</h3>
+        <div style="display:flex; gap:8px; margin-bottom:8px;">
+          <select id="productSelect" style="flex:1;"></select>
+          <input id="productQty" type="number" min="1" value="1" style="width:80px; padding:8px; border:1px solid #ddd; border-radius:4px;">
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn btn-primary" onclick="addToInvoice()" type="button">Agregar a Factura</button>
+          <button class="btn btn-success" onclick="processInvoice()" type="button">Facturar</button>
+        </div>
+        <h4 style="margin-top:15px;">Detalle de Factura</h4>
+        <table id="invoiceTable" style="width:100%; margin-top:8px;">
+          <thead>
+            <tr><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Subtotal</th><th></th></tr>
+          </thead>
+          <tbody></tbody>
+          <tfoot>
+            <tr><td colspan="3" style="text-align:right; font-weight:bold;">Total:</td><td id="invoiceTotal">$0.00</td><td></td></tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+    <p style="margin-top:14px; color:#666; font-size:0.9em;">Al facturar, se registrará automáticamente una transacción con cuentas DEBE (Caja/Bancos) y HABER (Ventas) y se sincronizará con la lista de transacciones.</p>
+  </div>
+
+  <div id="transactions" class="content">
     <h2 style="background-color: #2ecc71; color: white; padding: 10px; border-radius: 5px; margin-bottom: 20px;">Registro de Transacciones</h2>
     <form id="transactionForm">
       <div class="form-row">
@@ -642,6 +696,7 @@
     <button onclick="importJSON()" class="btn btn-warning">Importar JSON</button>
     <input type="file" id="jsonInput" style="display: none;" accept=".json">
   </div>
+  <footer style="text-align:center; margin-top:20px; color:#666; font-size:0.9em;">© Derechos reservados a Carlos Alfredo Castillo Flores - ITCPO - 2025</footer>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -714,12 +769,111 @@ const accounts = {
 
 let transactions = [];
 
-// Inicialización
-document.addEventListener('DOMContentLoaded', () => {
-  populateAccountSelects();
-  loadFromLocalStorage();
-  document.getElementById('transactionForm').addEventListener('submit', handleTransaction);
-});
+// Productos de ejemplo para la sección Ventas
+const products = [
+  { id: 'P001', name: 'Camiseta Básica', price: 19.99, debitAccount: '1.1.1.1 - Caja General', creditAccount: '4.5.1.1 - Ventas Nacionales' },
+  { id: 'P002', name: 'Laptop Modelo A', price: 1299.99, debitAccount: '1.1.2.1 - Bancos Nacionales', creditAccount: '4.5.1.1 - Ventas Nacionales' },
+  { id: 'P003', name: 'Mouse Inalámbrico', price: 29.99, debitAccount: '1.1.1.1 - Caja General', creditAccount: '4.5.1.1 - Ventas Nacionales' },
+  { id: 'P004', name: 'Servicio de Consultoría (paquete)', price: 2000.00, debitAccount: '1.1.2.1 - Bancos Nacionales', creditAccount: '4.5.1.1 - Ventas Nacionales' }
+];
+
+let invoiceItems = [];
+
+// Inicializa lista de productos en DOM
+function populateProducts() {
+  const list = document.getElementById('productsList');
+  const sel = document.getElementById('productSelect');
+  if (!list || !sel) return;
+  list.innerHTML = '';
+  sel.innerHTML = '';
+  products.forEach(p => {
+    const li = document.createElement('li');
+    li.style.padding = '8px';
+    li.style.border = '1px solid #eee';
+    li.style.borderRadius = '6px';
+    li.style.marginBottom = '8px';
+    li.innerHTML = `<strong>${p.name}</strong><br><span style="color:#666;">$${formatMoney(p.price)}</span>`;
+    list.appendChild(li);
+    const opt = new Option(`${p.name} — $${formatMoney(p.price)}`, p.id);
+    sel.add(opt);
+  });
+}
+
+// Agrega producto a la factura temporal
+function addToInvoice() {
+  const prodId = document.getElementById('productSelect').value;
+  const qty = Math.max(1, parseInt(document.getElementById('productQty').value || '1', 10));
+  const prod = products.find(p => p.id === prodId);
+  if (!prod) { showNotification('Seleccione un producto válido'); return; }
+  const existing = invoiceItems.find(i => i.id === prodId);
+  if (existing) existing.qty += qty; else invoiceItems.push({ ...prod, qty });
+  renderInvoice();
+}
+
+// Renderiza tabla de factura
+function renderInvoice() {
+  const tbody = document.querySelector('#invoiceTable tbody');
+  tbody.innerHTML = '';
+  let total = 0;
+  invoiceItems.forEach((it, idx) => {
+    const subtotal = it.price * it.qty;
+    total += subtotal;
+    const row = tbody.insertRow();
+    row.innerHTML = `<td>${it.name}</td><td>${it.qty}</td><td>$${formatMoney(it.price)}</td><td>$${formatMoney(subtotal)}</td><td><button class="btn" onclick="removeInvoiceItem(${idx})" style="background:#e74c3c; padding:6px 8px; border-radius:4px;">Eliminar</button></td>`;
+  });
+  document.getElementById('invoiceTotal').textContent = `$${formatMoney(total)}`;
+}
+
+// Remueve item de factura
+function removeInvoiceItem(index) {
+  invoiceItems.splice(index, 1);
+  renderInvoice();
+}
+
+// Procesa la factura: crea una transacción por el total y sincroniza con la lista de transacciones
+function processInvoice() {
+  if (invoiceItems.length === 0) { showNotification('No hay items en la factura'); return; }
+  // Sumar total y decidir cuenta de cobro: si alguno tiene debitAccount Bancos usar Bancos, sino Caja
+  let total = 0;
+  let selectedDebit = null;
+  invoiceItems.forEach(it => {
+    total += it.price * it.qty;
+    if (!selectedDebit && it.debitAccount.includes('Bancos')) selectedDebit = it.debitAccount;
+    if (!selectedDebit && it.debitAccount.includes('Caja')) selectedDebit = it.debitAccount;
+  });
+  if (!selectedDebit) selectedDebit = '1.1.1.1 - Caja General';
+  const creditAccount = '4.5.1.1 - Ventas Nacionales';
+  const today = new Date().toISOString().split('T')[0];
+  const description = 'Factura: ' + invoiceItems.map(i => `${i.qty}x ${i.name}`).join(', ');
+  const transaction = {
+    date: today,
+    type: 'venta',
+    debitAccount: selectedDebit,
+    creditAccount: creditAccount,
+    amount: parseFloat(total.toFixed(2)),
+    description,
+    debitCode: selectedDebit.split(' - ')[0],
+    creditCode: creditAccount.split(' - ')[0]
+  };
+  // Añadir a transacciones, actualizar tablas y sincronizar almacenamiento
+  transactions.push(transaction);
+  updateTransactionsTable();
+  saveToLocalStorage();
+  // Limpiar factura
+  invoiceItems = [];
+  renderInvoice();
+  showNotification('Factura registrada y transacción sincronizada');
+}
+
+// Asegura que productos estén cargados al iniciar
+
+ // Inicialización
+  document.addEventListener('DOMContentLoaded', () => {
+    populateAccountSelects();
+    populateProducts();
+    loadFromLocalStorage();
+    document.getElementById('transactionForm').addEventListener('submit', handleTransaction);
+  });
 
 function populateAccountSelects() {
   const debitSelect = document.getElementById('debitAccount');
