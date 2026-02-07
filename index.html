@@ -454,52 +454,44 @@
 <div class="modal-backdrop" id="modalBackdrop" onclick="hideHelp()"></div>
 <div class="help-modal" id="helpModal">
   <button class="close-modal" onclick="hideHelp()">&times;</button>
-  <h2>Guía de Registro de Transacciones</h2>
-  
-  <p>Esta guía te ayudará a entender cómo registrar correctamente las transacciones contables en el sistema.</p>
-  
-  <h3>Instrucciones Generales:</h3>
-  <p>1. Selecciona la fecha de la transacción</p>
-  <p>2. Elige el tipo de transacción (venta, compra, gasto, pago)</p>
-  <p>3. Ingresa el monto de la transacción</p>
-  <p>4. Selecciona la cuenta que "recibe" (DEBE)</p>
-  <p>5. Selecciona la cuenta que "entrega" (HABER)</p>
-  <p>6. Proporciona una descripción clara de la transacción</p>
+  <h2>Introducción y Propósito</h2>
 
-  <h3>Ejemplos Prácticos:</h3>
-  
+  <p>Esta aplicación es un entorno educativo para aprender los fundamentos de la contabilidad práctica: registrar transacciones, generar libros contables y entender cómo afectan el balance. Está diseñada para practicar registros contables en un catálogo simplificado y para sincronizar facturación con el libro diario y mayor.</p>
+
+  <h3>Objetivo educativo</h3>
+  <p>Aprender a identificar cuentas DEBE y HABER, clasificar tipos de transacciones (ventas, compras, gastos, pagos, crédito, inversión, financiamiento), y observar cómo cada operación impacta el Libro Diario, el Libro Mayor y el Balance General.</p>
+
+  <h3>Descripción de las opciones del menú</h3>
+  <ul>
+    <li><strong>Ventas:</strong> Lista de productos y facturación; al facturar se genera automáticamente la transacción correspondiente (DEBE: Caja/Bancos, HABER: Ventas) y se sincroniza con la lista de transacciones.</li>
+    <li><strong>Transacciones:</strong> Formulario para registrar manualmente transacciones, con selección de fecha, tipo, monto, cuenta DEBE y cuenta HABER; incluye edición, eliminación e importación/exportación.</li>
+    <li><strong>Libro Diario:</strong> Muestra las anotaciones por fecha con las partidas DEBE y HABER desglosadas para cada transacción.</li>
+    <li><strong>Libro Mayor:</strong> Agrupa movimientos por cuenta mostrando los débitos, créditos y saldo acumulado por cuenta.</li>
+    <li><strong>Balance General:</strong> Presenta los Activos (lado izquierdo) y Pasivo + Capital (lado derecho) con totales para verificar que Pasivo + Capital cuadre con Activos.</li>
+    <li><strong>Reportes:</strong> Genera PDF o Excel del Libro Diario, Libro Mayor y Balance General para descarga o impresión.</li>
+  </ul>
+
+  <h3>Buenas prácticas al registrar</h3>
+  <ol>
+    <li>Verifica que las cuentas seleccionadas pertenezcan al catálogo mostrado en el sistema.</li>
+    <li>Escribe descripciones claras que expliquen la naturaleza de la operación.</li>
+    <li>Revisa el Libro Diario y el Libro Mayor después de registrar para entender el efecto en saldos.</li>
+  </ol>
+
+  <h3>Ejemplo práctico</h3>
   <div class="example">
-    <h4>Ejemplo 1: Venta en Efectivo</h4>
-    <p>Venta de mercancía por $5,000 en efectivo</p>
+    <h4>Venta en efectivo — Caso de ejemplo</h4>
+    <p>Imagina que vendes mercancía por $5,000 en efectivo.</p>
     <ul>
       <li>Tipo: Venta</li>
+      <li>Fecha: (la del día)</li>
       <li>DEBE: 1.1.1.1 - Caja General ($5,000)</li>
       <li>HABER: 4.5.1.1 - Ventas Nacionales ($5,000)</li>
-      <li>Descripción: Venta de mercancía en efectivo</li>
+      <li>Descripción sugerida: "Venta de mercancía en efectivo — recibo #123"</li>
     </ul>
+    <p>Al registrar esto en la pestaña Transacciones (o al facturar desde Ventas), verás dos entradas en el Libro Diario y los saldos actualizados en el Libro Mayor y Balance General.</p>
   </div>
 
-  <div class="example">
-    <h4>Ejemplo 2: Compra a Crédito</h4>
-    <p>Compra de equipo de cómputo a crédito por $15,000</p>
-    <ul>
-      <li>Tipo: Compra</li>
-      <li>DEBE: 1.2.3.2 - Equipo de Cómputo ($15,000)</li>
-      <li>HABER: 2.3.1.1 - Proveedores Nacionales ($15,000)</li>
-      <li>Descripción: Compra de equipo de cómputo a crédito</li>
-    </ul>
-  </div>
-
-  <div class="example">
-    <h4>Ejemplo 3: Pago de Servicios</h4>
-    <p>Pago de servicios de luz por $2,500 con cargo a banco</p>
-    <ul>
-      <li>Tipo: Gasto</li>
-      <li>DEBE: 6.7.2.4 - Luz, Agua y Teléfono ($2,500)</li>
-      <li>HABER: 1.1.2.1 - Bancos Nacionales ($2,500)</li>
-      <li>Descripción: Pago de servicio de luz mensual</li>
-    </ul>
-  </div>
   <p style="margin-top:20px; font-size:0.9em; color:#666; border-top:1px solid #eee; padding-top:10px;">© Derechos reservados a Carlos Alfredo Castillo Flores - ITCPO - 2025</p>
 </div>
 <div class="notification-backdrop" id="notificationBackdrop"></div>
