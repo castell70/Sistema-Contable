@@ -464,6 +464,7 @@
   <h3>Descripción de las opciones del menú</h3>
   <ul>
     <li><strong>Ventas:</strong> Lista de productos y facturación; al facturar se genera automáticamente la transacción correspondiente (DEBE: Caja/Bancos, HABER: Ventas) y se sincroniza con la lista de transacciones.</li>
+    <li><strong>Compras:</strong> Registro de entradas de mercancía para aumentar el stock; permite ingresar compras a crédito o pago inmediato, agregar productos nuevos al inventario y, tras procesar la compra, se genera la transacción contable correspondiente (DEBE: Inventario, HABER: Proveedores/Caja/Bancos) y se sincroniza con la lista de transacciones.</li>
     <li><strong>Transacciones:</strong> Formulario para registrar manualmente transacciones, con selección de fecha, tipo, monto, cuenta DEBE y cuenta HABER; incluye edición, eliminación e importación/exportación.</li>
     <li><strong>Libro Diario:</strong> Muestra las anotaciones por fecha con las partidas DEBE y HABER desglosadas para cada transacción.</li>
     <li><strong>Libro Mayor:</strong> Agrupa movimientos por cuenta mostrando los débitos, créditos y saldo acumulado por cuenta.</li>
@@ -499,6 +500,31 @@
   <div class="notification-content" id="notificationContent"></div>
   <button class="notification-button" onclick="hideNotification()">Aceptar</button>
 </div>
+
+<!-- Modal for editing a product (purchase side) -->
+<div class="modal-backdrop" id="editProductBackdrop" style="display:none;"></div>
+<div class="confirmation-modal" id="editProductModal" style="display:none; z-index:2100; min-width:340px;">
+  <h3 style="margin-top:0;">Editar Producto</h3>
+  <div style="display:flex; flex-direction:column; gap:10px; margin-top:10px;">
+    <label style="font-weight:700; font-size:0.95em;">Nombre</label>
+    <input id="editProductName" type="text" style="padding:8px; border:1px solid #ddd; border-radius:4px;">
+    <div id="editNameMsg" style="color:#e74c3c; font-size:0.9em; min-height:18px;"></div>
+
+    <label style="font-weight:700; font-size:0.95em;">Precio de Compra</label>
+    <input id="editProductPurchase" type="number" step="0.01" style="padding:8px; border:1px solid #ddd; border-radius:4px;">
+    <div id="editPurchaseMsg" style="color:#e74c3c; font-size:0.9em; min-height:18px;"></div>
+
+    <label style="font-weight:700; font-size:0.95em;">Precio de Venta</label>
+    <input id="editProductSale" type="number" step="0.01" style="padding:8px; border:1px solid #ddd; border-radius:4px;">
+    <div id="editSaleMsg" style="color:#e74c3c; font-size:0.9em; min-height:18px;"></div>
+
+    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:6px;">
+      <button class="btn btn-danger" onclick="deleteProductFromModal()" type="button">Eliminar</button>
+      <button class="btn btn-primary" onclick="saveEditedProduct()" type="button">Guardar</button>
+      <button class="btn btn-warning" onclick="cancelEditProduct()" type="button">Cancelar</button>
+    </div>
+  </div>
+</div>
 <div class="confirmation-backdrop" id="confirmationBackdrop"></div>
 <div class="confirmation-modal" id="confirmationModal">
   <div class="confirmation-content">¿Está seguro de que desea eliminar esta transacción?</div>
@@ -520,6 +546,7 @@
   
   <div class="tabs">
     <button class="tab active" onclick="showTab(event, 'sales')">Ventas</button>
+    <button class="tab" onclick="showTab(event, 'purchases')">Compras</button>
     <button class="tab" onclick="showTab(event, 'transactions')">Transacciones</button>
     <button class="tab" onclick="showTab(event, 'ledger')">Libro Diario</button>
     <button class="tab" onclick="showTab(event, 'majorBook')">Libro Mayor</button>
@@ -559,6 +586,52 @@
     <p style="margin-top:14px; color:#666; font-size:0.9em;">Al facturar, se registrará automáticamente una transacción con cuentas DEBE (Caja/Bancos) y HABER (Ventas) y se sincronizará con la lista de transacciones.</p>
   </div>
 
+  <div id="purchases" class="content">
+    <h2 style="background-color: #f39c12; color: white; padding: 10px; border-radius: 5px; margin-bottom: 20px;">Compras - Entrada de Mercancía</h2>
+    <div style="display:flex; gap:20px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:260px;">
+        <h3 style="margin-bottom:10px;">Productos en Inventario</h3>
+        <ul id="productsListPurchases" style="list-style:none; padding:0;"></ul>
+        <h4 style="margin-top:12px;">Agregar Producto Nuevo</h4>
+        <div style="display:flex; gap:8px; margin-bottom:8px;">
+          <input id="newProductName" placeholder="Nombre del producto" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:4px;">
+          <input id="newProductPrice" type="number" min="0" step="0.01" placeholder="Precio" style="width:100px; padding:8px; border:1px solid #ddd; border-radius:4px;">
+        </div>
+        <button class="btn btn-primary" onclick="addNewProduct()" type="button">Agregar Producto</button>
+      </div>
+      <div style="flex:1; min-width:280px;">
+        <h3 style="margin-bottom:10px;">Registrar Compra</h3>
+        <div style="display:flex; gap:8px; margin-bottom:8px;">
+          <select id="purchaseProductSelect" style="flex:1;"></select>
+          <input id="purchaseQty" type="number" min="1" value="1" style="width:80px; padding:8px; border:1px solid #ddd; border-radius:4px;">
+        </div>
+        <div style="display:flex; gap:8px; margin-bottom:8px;">
+          <input id="purchasePrice" type="number" min="0" step="0.01" placeholder="Precio unitario" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:4px;">
+          <select id="purchasePaymentMethod" style="width:160px; padding:8px; border:1px solid #ddd; border-radius:4px;">
+            <option value="2.3.1.1 - Proveedores Nacionales">A crédito - Proveedores</option>
+            <option value="1.1.2.1 - Bancos Nacionales">Pago - Bancos</option>
+            <option value="1.1.1.1 - Caja General">Pago - Caja</option>
+          </select>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn btn-primary" onclick="addToPurchase()" type="button">Agregar a Compra</button>
+          <button class="btn btn-success" onclick="processPurchase()" type="button">Registrar Compra</button>
+        </div>
+        <h4 style="margin-top:15px;">Detalle de Compra</h4>
+        <table id="purchaseTable" style="width:100%; margin-top:8px;">
+          <thead>
+            <tr><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Subtotal</th><th></th></tr>
+          </thead>
+          <tbody></tbody>
+          <tfoot>
+            <tr><td colspan="3" style="text-align:right; font-weight:bold;">Total:</td><td id="purchaseTotal">$0.00</td><td></td></tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+    <p style="margin-top:14px; color:#666; font-size:0.9em;">Al registrar la compra se actualizará el stock y se generará automáticamente la transacción contable (DEBE: Inventario, HABER: Proveedores/Caja/Bancos) que se sincronizará con Transacciones.</p>
+  </div>
+
   <div id="transactions" class="content">
     <h2 style="background-color: #2ecc71; color: white; padding: 10px; border-radius: 5px; margin-bottom: 20px;">Registro de Transacciones</h2>
     <form id="transactionForm">
@@ -569,7 +642,7 @@
         </div>
         <div class="form-group">
           <label>Tipo de Transacción:</label>
-          <select id="type" required>
+          <select id="type" required onchange="applySuggestedAccounts()">
             <option value="">Seleccione tipo...</option>
             <option value="venta">Venta</option>
             <option value="compra">Compra</option>
@@ -578,6 +651,8 @@
             <option value="credito">Crédito</option>
             <option value="inversion">Inversión</option>
             <option value="financiamiento">Financiamiento</option>
+            <option value="ajuste-inventario">Ajuste Inventario</option>
+            <option value="ajuste-precio-venta">Ajuste Precio Venta</option>
           </select>
         </div>
         <div class="form-group">
@@ -763,35 +838,225 @@ let transactions = [];
 
 // Productos de ejemplo para la sección Ventas
 const products = [
-  { id: 'P001', name: 'Camiseta Básica', price: 19.99, debitAccount: '1.1.1.1 - Caja General', creditAccount: '4.5.1.1 - Ventas Nacionales' },
-  { id: 'P002', name: 'Laptop Modelo A', price: 1299.99, debitAccount: '1.1.2.1 - Bancos Nacionales', creditAccount: '4.5.1.1 - Ventas Nacionales' },
-  { id: 'P003', name: 'Mouse Inalámbrico', price: 29.99, debitAccount: '1.1.1.1 - Caja General', creditAccount: '4.5.1.1 - Ventas Nacionales' },
-  { id: 'P004', name: 'Servicio de Consultoría (paquete)', price: 2000.00, debitAccount: '1.1.2.1 - Bancos Nacionales', creditAccount: '4.5.1.1 - Ventas Nacionales' }
+  { id: 'P001', name: 'Camiseta Básica', price: 19.99, purchasePrice: 10.00, stock: 50, debitAccount: '1.1.1.1 - Caja General', creditAccount: '4.5.1.1 - Ventas Nacionales' },
+  { id: 'P002', name: 'Laptop Modelo A', price: 1299.99, purchasePrice: 900.00, stock: 10, debitAccount: '1.1.2.1 - Bancos Nacionales', creditAccount: '4.5.1.1 - Ventas Nacionales' },
+  { id: 'P003', name: 'Mouse Inalámbrico', price: 29.99, purchasePrice: 12.00, stock: 75, debitAccount: '1.1.1.1 - Caja General', creditAccount: '4.5.1.1 - Ventas Nacionales' },
+  { id: 'P004', name: 'Servicio de Consultoría (paquete)', price: 2000.00, purchasePrice: 0.00, stock: 5, debitAccount: '1.1.2.1 - Bancos Nacionales', creditAccount: '4.5.1.1 - Ventas Nacionales' }
 ];
 
 let invoiceItems = [];
 
-// Inicializa lista de productos en DOM
+/* Inicializa lista de productos en DOM para ventas y compras */
 function populateProducts() {
   const list = document.getElementById('productsList');
   const sel = document.getElementById('productSelect');
-  if (!list || !sel) return;
+  const listPurch = document.getElementById('productsListPurchases');
+  const selPurch = document.getElementById('purchaseProductSelect');
+  if (!list || !sel || !listPurch || !selPurch) return;
   list.innerHTML = '';
   sel.innerHTML = '';
+  listPurch.innerHTML = '';
+  selPurch.innerHTML = '';
   products.forEach(p => {
+    // Ventas list (left) - keep compact look
     const li = document.createElement('li');
-    li.style.padding = '8px';
-    li.style.border = '1px solid #eee';
-    li.style.borderRadius = '6px';
-    li.style.marginBottom = '8px';
-    li.innerHTML = `<strong>${p.name}</strong><br><span style="color:#666;">$${formatMoney(p.price)}</span>`;
+    li.style.padding = '8px 0';
+    li.style.marginBottom = '6px';
+    li.innerHTML = `<strong>${p.name}</strong><br><span style="color:#666;">Venta: $${formatMoney(p.price)} • Stock: ${p.stock || 0}</span>`;
     list.appendChild(li);
+
+    // Compras list (right) - simple list row (no card)
+    const li2 = document.createElement('li');
+    li2.style.display = 'flex';
+    li2.style.justifyContent = 'space-between';
+    li2.style.alignItems = 'center';
+    li2.style.padding = '6px 0';
+    li2.style.borderBottom = '1px solid #eee';
+
+    const leftDiv = document.createElement('div');
+    leftDiv.style.flex = '1';
+    leftDiv.innerHTML = `<strong>${p.name}</strong>
+                         <div style="color:#666; font-size:0.95em; margin-top:4px;">
+                           Precio Venta: $${formatMoney(p.price)} &nbsp;•&nbsp; Precio Compra: $${formatMoney(p.purchasePrice || 0)} &nbsp;•&nbsp; Stock: ${p.stock || 0}
+                         </div>`;
+
+    const actionsWrap = document.createElement('div');
+    actionsWrap.style.display = 'flex';
+    actionsWrap.style.alignItems = 'center';
+    actionsWrap.style.gap = '6px';
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'action-icon edit';
+    editBtn.title = 'Editar precios';
+    editBtn.innerHTML = '✏️';
+    editBtn.onclick = () => openEditProductModal(p.id);
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'action-icon delete';
+    delBtn.title = 'Eliminar producto';
+    delBtn.innerHTML = '🗑️';
+    delBtn.onclick = () => {
+      if (confirm('¿Eliminar producto "' + p.name + '"?')) {
+        deleteProduct(p.id);
+      }
+    };
+
+    actionsWrap.appendChild(editBtn);
+    actionsWrap.appendChild(delBtn);
+
+    li2.appendChild(leftDiv);
+    li2.appendChild(actionsWrap);
+    listPurch.appendChild(li2);
+
+    // Selects
     const opt = new Option(`${p.name} — $${formatMoney(p.price)}`, p.id);
     sel.add(opt);
+    const opt2 = new Option(`${p.name} — Stock: ${p.stock || 0}`, p.id);
+    selPurch.add(opt2);
   });
 }
 
-// Agrega producto a la factura temporal
+/* Editar producto: cambiar precio de compra/venta y actualizar listado */
+/* Modal-based product editor */
+let productBeingEdited = null;
+
+function openEditProductModal(productId) {
+  const prod = products.find(p => p.id === productId);
+  if (!prod) { showNotification('Producto no encontrado'); return; }
+  productBeingEdited = prod.id;
+  document.getElementById('editProductName').value = prod.name || '';
+  document.getElementById('editProductPurchase').value = prod.purchasePrice !== undefined ? prod.purchasePrice : '';
+  document.getElementById('editProductSale').value = prod.price !== undefined ? prod.price : '';
+  document.getElementById('editNameMsg').textContent = '';
+  document.getElementById('editPurchaseMsg').textContent = '';
+  document.getElementById('editSaleMsg').textContent = '';
+  document.getElementById('editProductBackdrop').style.display = 'block';
+  document.getElementById('editProductModal').style.display = 'block';
+}
+
+function validateEditInputs(name, purchase, sale) {
+  let ok = true;
+  document.getElementById('editNameMsg').textContent = '';
+  document.getElementById('editPurchaseMsg').textContent = '';
+  document.getElementById('editSaleMsg').textContent = '';
+
+  if (!name || !name.trim()) {
+    document.getElementById('editNameMsg').textContent = 'El nombre es obligatorio.';
+    ok = false;
+  }
+  if (isNaN(purchase) || purchase < 0) {
+    document.getElementById('editPurchaseMsg').textContent = 'Precio de compra inválido.';
+    ok = false;
+  }
+  if (isNaN(sale) || sale < 0) {
+    document.getElementById('editSaleMsg').textContent = 'Precio de venta inválido.';
+    ok = false;
+  }
+  return ok;
+}
+
+function saveEditedProduct() {
+  if (!productBeingEdited) return;
+  const name = document.getElementById('editProductName').value;
+  const purchase = parseFloat(document.getElementById('editProductPurchase').value || '0');
+  const sale = parseFloat(document.getElementById('editProductSale').value || '0');
+
+  if (!validateEditInputs(name, purchase, sale)) return;
+
+  const prod = products.find(p => p.id === productBeingEdited);
+  if (!prod) { showNotification('Producto no encontrado'); cancelEditProduct(); return; }
+
+  // Keep previous values to calculate adjustments
+  const prevPurchase = prod.purchasePrice !== undefined ? prod.purchasePrice : 0;
+  const prevSale = prod.price !== undefined ? prod.price : 0;
+  const stock = prod.stock || 0;
+
+  // Update product fields
+  prod.name = name.trim();
+  prod.purchasePrice = parseFloat(purchase.toFixed(2));
+  prod.price = parseFloat(sale.toFixed(2));
+
+  // Generate adjustment transactions when purchase price changes (affects inventory valuation)
+  const purchaseDiffPerUnit = parseFloat((prod.purchasePrice - prevPurchase).toFixed(2));
+  if (Math.abs(purchaseDiffPerUnit) >= 0.01 && stock > 0) {
+    const totalAdjustment = parseFloat((purchaseDiffPerUnit * stock).toFixed(2));
+    if (totalAdjustment !== 0) {
+      const today = new Date().toISOString().split('T')[0];
+      // If inventory value increased -> debit Inventario, credit Ajuste por valoración (usar cuenta de Capital/Resultados si no hay específica)
+      // If decreased -> reverse
+      const debitAccount = '1.1.6.1 - Inventario de Productos Terminados';
+      const creditAccount = '3.4.0.0 - Capital'; // cuenta genérica de ajuste
+      const adjTransaction = {
+        date: today,
+        type: 'ajuste-inventario',
+        debitAccount: totalAdjustment > 0 ? debitAccount : creditAccount,
+        creditAccount: totalAdjustment > 0 ? creditAccount : debitAccount,
+        amount: Math.abs(totalAdjustment),
+        description: `Ajuste por cambio en precio de compra de ${prod.name} (Δ $${formatMoney(purchaseDiffPerUnit)} por unidad, stock ${stock})`,
+        debitCode: (totalAdjustment > 0 ? debitAccount.split(' - ')[0] : creditAccount.split(' - ')[0]),
+        creditCode: (totalAdjustment > 0 ? creditAccount.split(' - ')[0] : debitAccount.split(' - ')[0])
+      };
+      transactions.push(adjTransaction);
+    }
+  }
+
+  // Generate a memo adjustment when sale price changes (optional impact on resultados/capital, based on stock)
+  const saleDiffPerUnit = parseFloat((prod.price - prevSale).toFixed(2));
+  if (Math.abs(saleDiffPerUnit) >= 0.01 && stock > 0) {
+    const totalSaleImpact = parseFloat((saleDiffPerUnit * stock).toFixed(2));
+    if (totalSaleImpact !== 0) {
+      const today = new Date().toISOString().split('T')[0];
+      // Use Ventas y Capital as representative accounts for sale price revaluation effect
+      const debitAccount = totalSaleImpact < 0 ? '4.5.1.1 - Ventas Nacionales' : '3.4.0.0 - Capital';
+      const creditAccount = totalSaleImpact < 0 ? '3.4.0.0 - Capital' : '4.5.1.1 - Ventas Nacionales';
+      const saleAdj = {
+        date: today,
+        type: 'ajuste-precio-venta',
+        debitAccount,
+        creditAccount,
+        amount: Math.abs(totalSaleImpact),
+        description: `Ajuste por cambio en precio de venta de ${prod.name} (Δ $${formatMoney(saleDiffPerUnit)} por unidad, stock ${stock})`,
+        debitCode: debitAccount.split(' - ')[0],
+        creditCode: creditAccount.split(' - ')[0]
+      };
+      transactions.push(saleAdj);
+    }
+  }
+
+  productBeingEdited = null;
+  document.getElementById('editProductBackdrop').style.display = 'none';
+  document.getElementById('editProductModal').style.display = 'none';
+  populateProducts();
+  updateTransactionsTable();
+  saveToLocalStorage();
+  showNotification('Producto actualizado' + ((Math.abs(purchaseDiffPerUnit) >= 0.01 && stock > 0) || (Math.abs(saleDiffPerUnit) >= 0.01 && stock > 0) ? ' y se generaron transacciones de ajuste' : ''));
+}
+
+function cancelEditProduct() {
+  productBeingEdited = null;
+  document.getElementById('editProductBackdrop').style.display = 'none';
+  document.getElementById('editProductModal').style.display = 'none';
+}
+
+function deleteProductFromModal() {
+  if (!productBeingEdited) return;
+  if (!confirm('¿Eliminar producto? Esta acción no se puede deshacer.')) return;
+  deleteProduct(productBeingEdited);
+  productBeingEdited = null;
+  document.getElementById('editProductBackdrop').style.display = 'none';
+  document.getElementById('editProductModal').style.display = 'none';
+}
+
+function deleteProduct(productId) {
+  const idx = products.findIndex(p => p.id === productId);
+  if (idx === -1) { showNotification('Producto no encontrado'); return; }
+  products.splice(idx, 1);
+  populateProducts();
+  saveToLocalStorage();
+  showNotification('Producto eliminado');
+}
+
+/* Agrega producto a la factura temporal */
 function addToInvoice() {
   const prodId = document.getElementById('productSelect').value;
   const qty = Math.max(1, parseInt(document.getElementById('productQty').value || '1', 10));
@@ -800,6 +1065,89 @@ function addToInvoice() {
   const existing = invoiceItems.find(i => i.id === prodId);
   if (existing) existing.qty += qty; else invoiceItems.push({ ...prod, qty });
   renderInvoice();
+}
+
+/* --- Funciones para Compras --- */
+let purchaseItems = [];
+
+function addNewProduct() {
+  const name = document.getElementById('newProductName').value.trim();
+  const price = parseFloat(document.getElementById('newProductPrice').value || '0');
+  if (!name || isNaN(price) || price <= 0) { showNotification('Ingrese nombre y precio válidos para el producto'); return; }
+  const id = 'P' + String(Math.floor(1000 + Math.random() * 9000));
+  const newProd = { id, name, price: parseFloat(price.toFixed(2)), stock: 0, debitAccount: '1.1.6.1 - Inventario de Productos Terminados', creditAccount: '4.5.1.1 - Ventas Nacionales' };
+  products.push(newProd);
+  populateProducts();
+  saveToLocalStorage();
+  showNotification('Producto agregado al inventario (stock 0). Ahora regístrelo en Compras si desea incrementar stock.');
+  document.getElementById('newProductName').value = '';
+  document.getElementById('newProductPrice').value = '';
+}
+
+function addToPurchase() {
+  const prodId = document.getElementById('purchaseProductSelect').value;
+  const qty = Math.max(1, parseInt(document.getElementById('purchaseQty').value || '1', 10));
+  const price = parseFloat(document.getElementById('purchasePrice').value || '0');
+  const prod = products.find(p => p.id === prodId);
+  if (!prod) { showNotification('Seleccione un producto válido'); return; }
+  if (!price || price <= 0) { showNotification('Ingrese precio unitario válido'); return; }
+  const existing = purchaseItems.find(i => i.id === prodId && i.price === price);
+  if (existing) existing.qty += qty; else purchaseItems.push({ id: prodId, name: prod.name, price: parseFloat(price.toFixed(2)), qty });
+  renderPurchase();
+}
+
+function renderPurchase() {
+  const tbody = document.querySelector('#purchaseTable tbody');
+  tbody.innerHTML = '';
+  let total = 0;
+  purchaseItems.forEach((it, idx) => {
+    const subtotal = it.price * it.qty;
+    total += subtotal;
+    const row = tbody.insertRow();
+    row.innerHTML = `<td>${it.name}</td><td>${it.qty}</td><td>$${formatMoney(it.price)}</td><td>$${formatMoney(subtotal)}</td><td><button class="btn" onclick="removePurchaseItem(${idx})" style="background:#e74c3c; padding:6px 8px; border-radius:4px;">Eliminar</button></td>`;
+  });
+  document.getElementById('purchaseTotal').textContent = `$${formatMoney(total)}`;
+}
+
+function removePurchaseItem(index) {
+  purchaseItems.splice(index, 1);
+  renderPurchase();
+}
+
+function processPurchase() {
+  if (purchaseItems.length === 0) { showNotification('No hay items en la compra'); return; }
+  const paymentAccount = document.getElementById('purchasePaymentMethod').value || '2.3.1.1 - Proveedores Nacionales';
+  let total = 0;
+  purchaseItems.forEach(it => total += it.price * it.qty);
+  // Update stock for each product
+  purchaseItems.forEach(it => {
+    const prod = products.find(p => p.id === it.id);
+    if (prod) {
+      prod.stock = (prod.stock || 0) + it.qty;
+      // Ensure inventory debit account exists on product
+      if (!prod.debitAccount) prod.debitAccount = '1.1.6.1 - Inventario de Productos Terminados';
+    }
+  });
+
+  const today = new Date().toISOString().split('T')[0];
+  const description = 'Compra: ' + purchaseItems.map(i => `${i.qty}x ${i.name}`).join(', ');
+  const transaction = {
+    date: today,
+    type: 'compra',
+    debitAccount: '1.1.6.1 - Inventario de Productos Terminados',
+    creditAccount: paymentAccount,
+    amount: parseFloat(total.toFixed(2)),
+    description,
+    debitCode: '1.1.6.1',
+    creditCode: paymentAccount.split(' - ')[0]
+  };
+  transactions.push(transaction);
+  updateTransactionsTable();
+  saveToLocalStorage();
+  purchaseItems = [];
+  renderPurchase();
+  populateProducts();
+  showNotification('Compra registrada, stock actualizado y transacción sincronizada');
 }
 
 // Renderiza tabla de factura
@@ -881,6 +1229,46 @@ function populateAccountSelects() {
     debitSelect.add(new Option(account, account));
     creditSelect.add(new Option(account, account));
   });
+}
+
+/* Suggested accounts mapping by transaction type */
+function applySuggestedAccounts() {
+  const type = document.getElementById('type').value;
+  const debitSelect = document.getElementById('debitAccount');
+  const creditSelect = document.getElementById('creditAccount');
+
+  // Default fallback (keep first non-empty option)
+  const firstDebit = debitSelect.options.length > 1 ? debitSelect.options[1].value : debitSelect.options[0].value;
+  const firstCredit = creditSelect.options.length > 1 ? creditSelect.options[1].value : creditSelect.options[0].value;
+
+  const suggestions = {
+    venta: { debit: '1.1.1.1 - Caja General', credit: '4.5.1.1 - Ventas Nacionales' },
+    compra: { debit: '1.1.6.1 - Inventario de Productos Terminados', credit: '2.3.1.1 - Proveedores Nacionales' },
+    gasto: { debit: '6.7.2.4 - Luz, Agua y Teléfono', credit: '1.1.2.1 - Bancos Nacionales' },
+    pago: { debit: '2.3.1.1 - Proveedores Nacionales', credit: '1.1.2.1 - Bancos Nacionales' },
+    credito: { debit: '1.1.3.1 - Clientes Nacionales', credit: '4.5.1.1 - Ventas Nacionales' },
+    inversion: { debit: '1.1.2.1 - Bancos Nacionales', credit: '3.4.1.0 - Capital Social' },
+    financiamiento: { debit: '1.1.2.1 - Bancos Nacionales', credit: '2.3.2.0 - Documentos por Pagar' },
+    'ajuste-inventario': { debit: '1.1.6.1 - Inventario de Productos Terminados', credit: '3.4.0.0 - Capital' },
+    'ajuste-precio-venta': { debit: '3.4.0.0 - Capital', credit: '4.5.1.1 - Ventas Nacionales' }
+  };
+
+  const s = suggestions[type] || { debit: firstDebit, credit: firstCredit };
+
+  // Only apply suggestions if options exist in selects; otherwise keep current
+  function setIfExists(selectEl, value) {
+    for (let i = 0; i < selectEl.options.length; i++) {
+      if (selectEl.options[i].value === value) {
+        selectEl.value = value;
+        return true;
+      }
+    }
+    // if not found, don't change
+    return false;
+  }
+
+  setIfExists(debitSelect, s.debit);
+  setIfExists(creditSelect, s.credit);
 }
 
 function showTab(event, tabName) {
@@ -1156,13 +1544,37 @@ function updateBalance() {
 
 function saveToLocalStorage() {
   localStorage.setItem('accountingTransactions', JSON.stringify(transactions));
+  localStorage.setItem('accountingProducts', JSON.stringify(products));
 }
 
 function loadFromLocalStorage() {
   const saved = localStorage.getItem('accountingTransactions');
+  const savedProducts = localStorage.getItem('accountingProducts');
   if (saved) {
     transactions = JSON.parse(saved);
     updateTransactionsTable();
+  }
+  if (savedProducts) {
+    try {
+      const parsed = JSON.parse(savedProducts);
+      if (Array.isArray(parsed)) {
+        // Merge saved products keeping any new defaults
+        parsed.forEach(sp => {
+          const existing = products.find(p => p.id === sp.id);
+          if (existing) {
+            existing.stock = sp.stock || existing.stock || 0;
+            existing.price = sp.price !== undefined ? sp.price : existing.price;
+          } else {
+            products.push(sp);
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('Error cargando productos guardados', e);
+    }
+    populateProducts();
+  } else {
+    populateProducts();
   }
 }
 
