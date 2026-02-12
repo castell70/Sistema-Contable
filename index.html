@@ -2,6 +2,16 @@
 <head>
 <meta charset="UTF-8">
 <title>Sistema Contable by ITCPO</title>
+
+<!-- Import map for potential ESM modules (kept local modules) -->
+<script type="importmap">
+{
+  "imports": {
+    "app_security/": "./modules/"
+  }
+}
+</script>
+
 <style>
   :root {
     --primary: #2c3e50;
@@ -320,15 +330,16 @@
   .notification-modal {
     display: none;
     position: fixed;
-    top: 50%;
+    top: 12%;
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, 0);
     background: white;
-    padding: 20px;
+    padding: 14px 18px;
     border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    z-index: 2000;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+    z-index: 2401; /* raised so notifications appear above other modals */
     min-width: 300px;
+    max-width: 90%;
     text-align: center;
   }
 
@@ -339,8 +350,8 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.5);
-    z-index: 1999;
+    background: rgba(0,0,0,0.15);
+    z-index: 2400; /* keep just below notification */
   }
 
   .notification-content {
@@ -447,6 +458,30 @@
     justify-content: center;
     gap: 10px;
   }
+
+  /* Slide-down modal for catalog view (appears from top) */
+  #catalogViewModal {
+    position: fixed;
+    left: 50%;
+    top: -100%;
+    transform: translate(-50%, -100%);
+    transition: transform 320ms cubic-bezier(.2,.9,.2,1), top 320ms cubic-bezier(.2,.9,.2,1), opacity 320ms;
+    opacity: 0;
+    display: none;
+    z-index: 2250;
+    min-width: 800px;
+    max-width: 95%;
+    width: 85%;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  }
+
+  #catalogViewModal.slide-down {
+    top: 6%;
+    transform: translate(-50%, 0);
+    opacity: 1;
+    display: block;
+  }
 </style>
 </head>
 <body>
@@ -465,11 +500,18 @@
   <ul>
     <li><strong>Ventas:</strong> Lista de productos y facturación; al facturar se genera automáticamente la transacción correspondiente (DEBE: Caja/Bancos, HABER: Ventas) y se sincroniza con la lista de transacciones.</li>
     <li><strong>Compras:</strong> Registro de entradas de mercancía para aumentar el stock; permite ingresar compras a crédito o pago inmediato, agregar productos nuevos al inventario y, tras procesar la compra, se genera la transacción contable correspondiente (DEBE: Inventario, HABER: Proveedores/Caja/Bancos) y se sincroniza con la lista de transacciones.</li>
-    <li><strong>Transacciones:</strong> Formulario para registrar manualmente transacciones, con selección de fecha, tipo, monto, cuenta DEBE y cuenta HABER; incluye edición, eliminación e importación/exportación.</li>
+    <li><strong>Transacciones:</strong> Formulario para registrar manualmente transacciones, con selección de fecha (la fecha por defecto sugerida es la actual), tipo, monto, cuenta DEBE y cuenta HABER; incluye edición, eliminación, búsqueda en las transacciones registradas e importación/exportación.</li>
     <li><strong>Libro Diario:</strong> Muestra las anotaciones por fecha con las partidas DEBE y HABER desglosadas para cada transacción.</li>
     <li><strong>Libro Mayor:</strong> Agrupa movimientos por cuenta mostrando los débitos, créditos y saldo acumulado por cuenta.</li>
     <li><strong>Balance General:</strong> Presenta los Activos (lado izquierdo) y Pasivo + Capital (lado derecho) con totales para verificar que Pasivo + Capital cuadre con Activos.</li>
     <li><strong>Reportes:</strong> Genera PDF o Excel del Libro Diario, Libro Mayor y Balance General para descarga o impresión.</li>
+    <li><strong>Herramientas:</strong> Agrupa utilidades administrativas y de intercambio de datos:
+      <ul>
+        <li><strong>Empresa:</strong> Formulario para guardar los datos principales de la empresa (Nombre*, Giro, Teléfono, Responsable*, Registro, NIT, Correo*). Los campos se presentan priorizados y algunos marcados como requeridos.</li>
+        <li><strong>Catálogo:</strong> Opción para descargar o cargar el catálogo de cuentas contables en formato JSON y así reemplazar o restaurar el catálogo usado por el sistema.</li>
+        <li><strong>Utilidades:</strong> Botones para Guardar Datos, Exportar JSON, Exportar Excel e Importar JSON que permiten exportar/importar las transacciones y respaldar la información del sistema.</li>
+      </ul>
+    </li>
   </ul>
 
   <h3>Buenas prácticas al registrar</h3>
@@ -541,6 +583,57 @@
     <button class="btn btn-primary" onclick="cancelClear()">Cancelar</button>
   </div>
 </div>
+
+<!-- Company modal (Herramientas -> Empresa) -->
+<div class="modal-backdrop" id="companyBackdrop" style="display:none;"></div>
+<div class="confirmation-modal" id="companyModal" style="display:none; z-index:2200; min-width:360px;">
+  <h3 style="margin-top:0;">Datos de la Empresa</h3>
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px; align-items:start;">
+    <div>
+      <label style="font-weight:700;">Nombre de la empresa * </label>
+      <input id="companyName" type="text" style="padding:8px; border:1px solid #ddd; border-radius:4px; width:100%;">
+      <div id="companyNameMsg" style="color:#e74c3c; font-size:0.9em; min-height:18px;"></div>
+    </div>
+
+    <div>
+      <label style="font-weight:700;">Responsable * </label>
+      <input id="companyResponsible" type="text" style="padding:8px; border:1px solid #ddd; border-radius:4px; width:100%;">
+      <div id="companyRespMsg" style="color:#e74c3c; font-size:0.9em; min-height:18px;"></div>
+    </div>
+
+    <div>
+      <label style="font-weight:700;">Correo del responsable * </label>
+      <input id="companyEmail" type="email" style="padding:8px; border:1px solid #ddd; border-radius:4px; width:100%;">
+      <div id="companyEmailMsg" style="color:#e74c3c; font-size:0.9em; min-height:18px;"></div>
+    </div>
+
+    <div>
+      <label style="font-weight:700;">Giro / Actividad económica</label>
+      <input id="companyActivity" type="text" style="padding:8px; border:1px solid #ddd; border-radius:4px; width:100%;">
+    </div>
+
+    <div>
+      <label style="font-weight:700;">Teléfono</label>
+      <input id="companyPhone" type="text" style="padding:8px; border:1px solid #ddd; border-radius:4px; width:100%;">
+    </div>
+
+    <div>
+      <label style="font-weight:700;">Registro</label>
+      <input id="companyRegistry" type="text" style="padding:8px; border:1px solid #ddd; border-radius:4px; width:100%;">
+    </div>
+
+    <div style="grid-column: 1 / 2;">
+      <label style="font-weight:700;">NIT</label>
+      <input id="companyNIT" type="text" style="padding:8px; border:1px solid #ddd; border-radius:4px; width:100%;">
+    </div>
+
+    <div style="display:flex; gap:10px; justify-content:flex-end; align-items:end;">
+      <div style="margin-left:auto;"></div>
+      <button class="btn btn-primary" onclick="saveCompany()" type="button">Guardar</button>
+      <button class="btn btn-warning" onclick="closeCompanyModal()" type="button">Cancelar</button>
+    </div>
+  </div>
+</div>
 <div class="container">
   <h1 style="background-color: #f39c12; color: white; padding: 10px; border-radius: 5px; margin-bottom: 20px;">Sistema Contable by ITCPO</h1>
   
@@ -552,6 +645,7 @@
     <button class="tab" onclick="showTab(event, 'majorBook')">Libro Mayor</button>
     <button class="tab" onclick="showTab(event, 'balance')">Balance General</button>
     <button class="tab" onclick="showTab(event, 'reports')">Reportes</button>
+    <button class="tab" onclick="showTab(event, 'tools')">Herramientas</button>
   </div>
 
   <div id="sales" class="content active">
@@ -653,6 +747,7 @@
             <option value="financiamiento">Financiamiento</option>
             <option value="ajuste-inventario">Ajuste Inventario</option>
             <option value="ajuste-precio-venta">Ajuste Precio Venta</option>
+            <option value="devolucion">Devolución de Producto</option>
           </select>
         </div>
         <div class="form-group">
@@ -674,6 +769,21 @@
           <input type="text" id="description" required>
         </div>
       </div>
+
+      <!-- Campos específicos para devolución (ocultos por defecto) -->
+      <div id="returnFields" style="display:none; margin-top:10px;">
+        <div class="form-row" style="align-items:center;">
+          <div class="form-group" style="flex:1;">
+            <label>Producto devuelto:</label>
+            <select id="returnProductSelect" style="width:100%;"></select>
+          </div>
+          <div class="form-group" style="width:140px;">
+            <label>Cantidad:</label>
+            <input type="number" id="returnQty" min="1" value="1" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+          </div>
+        </div>
+        <p style="font-size:0.9em; color:#666; margin-top:6px;">Al registrar una devolución se incrementará el stock del producto y se generará la partida contable (DEBE: Inventario, HABER: Ventas).</p>
+      </div>
       <div style="display: flex; gap: 10px;">
         <button type="submit" class="btn btn-primary">Registrar Transacción</button>
         <button type="button" onclick="addExampleTransactions()" class="btn btn-success">Ejemplo</button>
@@ -683,7 +793,14 @@
     </form>
 
     <div class="transactions-list">
-      <h3 style="background-color: #f39c12; color: white; padding: 10px; border-radius: 5px; margin-bottom: 20px;">Transacciones Registradas</h3>
+      <h3 style="background-color: #f39c12; color: white; padding: 10px; border-radius: 5px; margin-bottom: 12px;">Transacciones Registradas</h3>
+
+      <!-- Search field to filter transactions -->
+      <div style="margin-bottom:12px; display:flex; gap:8px; align-items:center;">
+        <input id="transactionsSearch" placeholder="Buscar transacción (fecha, tipo, cuenta, descripción...)" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:4px;">
+        <button class="btn btn-primary" onclick="clearTransactionsSearch()" type="button" style="padding:8px 10px;">Limpiar</button>
+      </div>
+
       <table id="transactionsTable">
         <thead>
           <tr>
@@ -756,13 +873,104 @@
     </div>
   </div>
 
-  <div style="margin-top: 20px;">
-    <button onclick="saveData()" class="btn btn-primary">Guardar Datos</button>
-    <button onclick="exportToJSON()" class="btn btn-success">Exportar JSON</button>
-    <button onclick="exportToExcel()" class="btn btn-warning">Exportar Excel</button>
-    <button onclick="importJSON()" class="btn btn-warning">Importar JSON</button>
-    <input type="file" id="jsonInput" style="display: none;" accept=".json">
+  <!-- Herramientas -->
+  <div id="tools" class="content">
+    <h2 style="background-color: #9b59b6; color: white; padding: 10px; border-radius: 5px; margin-bottom: 20px;">Herramientas</h2>
+    <div style="display:flex; gap:20px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:260px;">
+        <h3>Empresa</h3>
+        <p style="color:#666; font-size:0.95em; margin-bottom:8px;">Guarda los datos principales de la empresa. Los campos marcados con * son obligatorios.</p>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button class="btn btn-primary" onclick="openCompanyModal()" type="button">Empresa</button>
+          <button class="btn btn-brown" onclick="openCatalogModal()" type="button">Catálogo</button>
+        </div>
+      </div>
+
+      
+
+      <div style="flex:2; min-width:280px;">
+        <h3>Información guardada</h3>
+        <div id="companyInfo" style="padding:12px; border:1px solid #eee; border-radius:6px; background:#fff; min-height:120px; color:#333;">
+          <em style="color:#888;">No hay información de empresa guardada.</em>
+        </div>
+      </div>
+
+      <div style="flex:1 1 100%; min-width:260px; margin-top:12px;">
+        <h3>Utilidades</h3>
+        <p style="color:#666; font-size:0.95em; margin-bottom:8px;">Acciones para guardar y exportar/importar datos del sistema.</p>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+          <button class="btn btn-primary" onclick="saveData()" type="button" title="Guardar datos localmente">Guardar Datos</button>
+          <button class="btn btn-success" onclick="exportToJSON()" type="button" title="Exportar transacciones a JSON">Exportar JSON</button>
+          <button class="btn btn-warning" onclick="exportToExcel()" type="button" title="Exportar a Excel">Exportar Excel</button>
+          <button class="btn btn-warning" onclick="document.getElementById('jsonInput').click()" type="button" title="Importar transacciones desde JSON">Importar JSON</button>
+          <input type="file" id="jsonInput" style="display: none;" accept=".json">
+          <input type="file" id="catalogInput" style="display: none;" accept=".json">
+        </div>
+      </div>
+
+    </div>
   </div>
+
+  <!-- Catalog modal (simple info) -->
+  <div class="modal-backdrop" id="catalogBackdrop" style="display:none;"></div>
+  <div class="confirmation-modal" id="catalogModal" style="display:none; z-index:2200; min-width:360px;">
+    <h3 style="margin-top:0;">Catálogo de Cuentas</h3>
+    <div style="margin-top:10px;">
+      <p style="color:#666;">Desde aquí puedes descargar el catálogo actual de cuentas, cargar un archivo JSON con la estructura del catálogo para reemplazar el actual, o revisar el catálogo en detalle.</p>
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:14px;">
+        <button class="btn btn-primary" onclick="exportAccountsCatalog()" type="button">Descargar</button>
+        <button class="btn btn-warning" onclick="document.getElementById('catalogInput').click()" type="button">Cargar</button>
+        <button class="btn btn-success" onclick="openCatalogView()" type="button">Ver Catálogo</button>
+        <button class="btn btn-black" onclick="closeCatalogModal()" type="button">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Catalog view modal: muestra tabla editable por tipo -->
+  <div class="modal-backdrop" id="catalogViewBackdrop" style="display:none;"></div>
+  <div class="confirmation-modal" id="catalogViewModal" style="min-width:800px; max-width:95%; width:85%;">
+    <button class="close-modal" onclick="closeCatalogView()" aria-label="Cerrar catálogo" style="right:12px; top:8px;">&times;</button>
+    <h3 style="margin-top:0;">Ver y Editar Catálogo de Cuentas</h3>
+    <div style="margin-top:10px; max-height:60vh; overflow:auto;">
+      <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+        <strong style="align-self:center;">Filtrar por:</strong>
+        <button class="btn btn-primary" onclick="renderCatalogView('activo')" type="button">Activo</button>
+        <button class="btn btn-primary" onclick="renderCatalogView('pasivo')" type="button">Pasivo</button>
+        <button class="btn btn-primary" onclick="renderCatalogView('capital')" type="button">Capital</button>
+        <button class="btn btn-primary" onclick="renderCatalogView('resultados')" type="button">Resultados</button>
+        <button class="btn btn-warning" onclick="renderCatalogView()" type="button">Mostrar todo</button>
+        <button class="btn btn-success" onclick="openCatalogAddForm()" type="button">Agregar Cuenta</button>
+      </div>
+      <div id="catalogViewContent"></div>
+
+      <!-- Floating add/edit form for catalog accounts (now a floating panel) -->
+      <div id="catalogForm" style="display:none; position:fixed; right:20px; top:10%; width:420px; max-width:90%; padding:14px; border:1px solid #e6e6e6; border-radius:8px; background:#fafafa; box-shadow:0 8px 30px rgba(0,0,0,0.12); z-index:2300;">
+        <button class="close-modal" onclick="cancelCatalogForm()" aria-label="Cerrar formulario" style="right:12px; top:8px; position:absolute; background:none; border:none; font-size:20px;">&times;</button>
+        <h4 id="catalogFormTitle" style="margin-top:0; margin-bottom:8px;">Agregar Cuenta</h4>
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+          <input id="catalogFormInput" type="text" placeholder='Ej: "1.1.1.1 - Caja General"' style="flex:1; padding:8px; border:1px solid #ddd; border-radius:4px;">
+          <select id="catalogFormType" style="width:160px; padding:8px; border:1px solid #ddd; border-radius:4px;">
+            <option value="activo">Activo</option>
+            <option value="pasivo">Pasivo</option>
+            <option value="capital">Capital</option>
+            <option value="resultados">Resultados</option>
+          </select>
+        </div>
+        <div style="display:flex; gap:8px; justify-content:flex-end;">
+          <button class="btn btn-success" onclick="acceptCatalogForm()" type="button">Aceptar</button>
+          <button class="btn btn-primary" onclick="cancelCatalogForm()" type="button">Cancelar</button>
+        </div>
+        <div id="catalogFormMsg" style="color:#e74c3c; font-size:0.95em; margin-top:8px; min-height:18px;"></div>
+      </div>
+
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px;">
+        <button class="btn btn-success" onclick="saveCatalogChanges()" type="button">Guardar cambios</button>
+        <button class="btn btn-primary" onclick="closeCatalogView()" type="button">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  
   <footer style="text-align:center; margin-top:20px; color:#666; font-size:0.9em;">© Derechos reservados a Carlos Alfredo Castillo Flores - ITCPO - 2025</footer>
 </div>
 
@@ -913,6 +1121,13 @@ function populateProducts() {
     sel.add(opt);
     const opt2 = new Option(`${p.name} — Stock: ${p.stock || 0}`, p.id);
     selPurch.add(opt2);
+
+    // Also populate return product select if present
+    const returnSel = document.getElementById('returnProductSelect');
+    if (returnSel) {
+      const optR = new Option(`${p.name} — Stock: ${p.stock || 0}`, p.id);
+      returnSel.add(optR);
+    }
   });
 }
 
@@ -1062,7 +1277,16 @@ function addToInvoice() {
   const qty = Math.max(1, parseInt(document.getElementById('productQty').value || '1', 10));
   const prod = products.find(p => p.id === prodId);
   if (!prod) { showNotification('Seleccione un producto válido'); return; }
+
+  // Check available stock before adding
   const existing = invoiceItems.find(i => i.id === prodId);
+  const existingQty = existing ? existing.qty : 0;
+  const available = prod.stock || 0;
+  if (existingQty + qty > available) {
+    showNotification(`Stock insuficiente para "${prod.name}". Disponible: ${available - existingQty}`);
+    return;
+  }
+
   if (existing) existing.qty += qty; else invoiceItems.push({ ...prod, qty });
   renderInvoice();
 }
@@ -1173,13 +1397,25 @@ function removeInvoiceItem(index) {
 // Procesa la factura: crea una transacción por el total y sincroniza con la lista de transacciones
 function processInvoice() {
   if (invoiceItems.length === 0) { showNotification('No hay items en la factura'); return; }
+
+  // Verify stocks again before processing (in case of race/changes)
+  for (const it of invoiceItems) {
+    const prod = products.find(p => p.id === it.id);
+    const available = prod ? (prod.stock || 0) : 0;
+    if (!prod) { showNotification(`Producto no encontrado: ${it.name}`); return; }
+    if (it.qty > available) {
+      showNotification(`Stock insuficiente para "${it.name}". Disponible: ${available}`);
+      return;
+    }
+  }
+
   // Sumar total y decidir cuenta de cobro: si alguno tiene debitAccount Bancos usar Bancos, sino Caja
   let total = 0;
   let selectedDebit = null;
   invoiceItems.forEach(it => {
     total += it.price * it.qty;
-    if (!selectedDebit && it.debitAccount.includes('Bancos')) selectedDebit = it.debitAccount;
-    if (!selectedDebit && it.debitAccount.includes('Caja')) selectedDebit = it.debitAccount;
+    if (!selectedDebit && it.debitAccount && it.debitAccount.includes('Bancos')) selectedDebit = it.debitAccount;
+    if (!selectedDebit && it.debitAccount && it.debitAccount.includes('Caja')) selectedDebit = it.debitAccount;
   });
   if (!selectedDebit) selectedDebit = '1.1.1.1 - Caja General';
   const creditAccount = '4.5.1.1 - Ventas Nacionales';
@@ -1195,14 +1431,25 @@ function processInvoice() {
     debitCode: selectedDebit.split(' - ')[0],
     creditCode: creditAccount.split(' - ')[0]
   };
+
+  // Disminuir stock por cada item vendido
+  invoiceItems.forEach(it => {
+    const prod = products.find(p => p.id === it.id);
+    if (prod) {
+      prod.stock = Math.max(0, (prod.stock || 0) - it.qty);
+    }
+  });
+
   // Añadir a transacciones, actualizar tablas y sincronizar almacenamiento
   transactions.push(transaction);
   updateTransactionsTable();
+  populateProducts();
   saveToLocalStorage();
+
   // Limpiar factura
   invoiceItems = [];
   renderInvoice();
-  showNotification('Factura registrada y transacción sincronizada');
+  showNotification('Factura registrada, stock actualizado y transacción sincronizada');
 }
 
 // Asegura que productos estén cargados al iniciar
@@ -1213,7 +1460,46 @@ function processInvoice() {
     populateProducts();
     loadFromLocalStorage();
     document.getElementById('transactionForm').addEventListener('submit', handleTransaction);
+
+    // Set default date to today in the transaction form
+    const dateInput = document.getElementById('date');
+    if (dateInput) {
+      const today = new Date().toISOString().split('T')[0];
+      dateInput.value = today;
+    }
+
+    // Wire search box for transactions filtering
+    const searchInput = document.getElementById('transactionsSearch');
+    if (searchInput) {
+      searchInput.addEventListener('input', filterTransactions);
+    }
+
+    // Wire catalog file input change to importAccountsCatalog (prevents null when invoking .click())
+    const catalogInput = document.getElementById('catalogInput');
+    if (catalogInput) {
+      catalogInput.addEventListener('change', importAccountsCatalog);
+    }
   });
+
+  // Filter transactions table rows by search text
+  function filterTransactions() {
+    const q = (document.getElementById('transactionsSearch').value || '').trim().toLowerCase();
+    const tbody = document.querySelector('#transactionsTable tbody');
+    if (!tbody) return;
+    Array.from(tbody.rows).forEach(row => {
+      const text = Array.from(row.cells).map(c => c.textContent || '').join(' ').toLowerCase();
+      row.style.display = q === '' || text.includes(q) ? '' : 'none';
+    });
+  }
+
+  function clearTransactionsSearch() {
+    const el = document.getElementById('transactionsSearch');
+    if (el) {
+      el.value = '';
+      filterTransactions();
+      el.focus();
+    }
+  }
 
 function populateAccountSelects() {
   const debitSelect = document.getElementById('debitAccount');
@@ -1232,10 +1518,318 @@ function populateAccountSelects() {
 }
 
 /* Suggested accounts mapping by transaction type */
+
+// --- Funciones para exportar/importar catálogo de cuentas ---
+function exportAccountsCatalog() {
+  try {
+    const catalog = {
+      activo: accounts.activo || [],
+      pasivo: accounts.pasivo || [],
+      capital: accounts.capital || [],
+      resultados: accounts.resultados || []
+    };
+    const dataStr = JSON.stringify(catalog, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', 'catalogo_cuentas.json');
+    document.body.appendChild(linkElement);
+    linkElement.click();
+    document.body.removeChild(linkElement);
+    showNotification('Catálogo de cuentas descargado');
+  } catch (e) {
+    showNotification('Error al descargar catálogo');
+  }
+}
+
+function importAccountsCatalog(e) {
+  const file = e && e.target && e.target.files ? e.target.files[0] : null;
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    try {
+      const parsed = JSON.parse(evt.target.result);
+      // Expecting object with arrays for activo, pasivo, capital, resultados
+      if (!parsed || typeof parsed !== 'object') throw new Error('Formato inválido');
+      const newAccounts = {
+        activo: Array.isArray(parsed.activo) ? parsed.activo : accounts.activo,
+        pasivo: Array.isArray(parsed.pasivo) ? parsed.pasivo : accounts.pasivo,
+        capital: Array.isArray(parsed.capital) ? parsed.capital : accounts.capital,
+        resultados: Array.isArray(parsed.resultados) ? parsed.resultados : accounts.resultados
+      };
+      // Replace in-memory accounts and refresh selects and views
+      accounts.activo = newAccounts.activo;
+      accounts.pasivo = newAccounts.pasivo;
+      accounts.capital = newAccounts.capital;
+      accounts.resultados = newAccounts.resultados;
+      populateAccountSelects();
+      updateTransactionsTable();
+      updateMajorBook();
+      updateBalance();
+      showNotification('Catálogo de cuentas cargado correctamente');
+      // clear file input
+      const inp = document.getElementById('catalogInput');
+      if (inp) inp.value = '';
+    } catch (err) {
+      showNotification('Error al cargar catálogo: formato inválido');
+      const inp = document.getElementById('catalogInput');
+      if (inp) inp.value = '';
+    }
+  };
+  reader.readAsText(file);
+}
+
+function openCatalogModal() {
+  const bd = document.getElementById('catalogBackdrop');
+  const md = document.getElementById('catalogModal');
+  if (bd) bd.style.display = 'block';
+  if (md) md.style.display = 'block';
+}
+
+function closeCatalogModal() {
+  const bd = document.getElementById('catalogBackdrop');
+  const md = document.getElementById('catalogModal');
+  if (bd) bd.style.display = 'none';
+  if (md) md.style.display = 'none';
+}
+
+/* --- Catálogo: vista y edición rápida --- */
+function openCatalogView() {
+  renderCatalogView(); // default show all
+  const bd = document.getElementById('catalogViewBackdrop');
+  const md = document.getElementById('catalogViewModal');
+  if (bd) bd.style.display = 'block';
+  if (md) {
+    // ensure it's hidden then trigger slide-down for animation
+    md.classList.remove('slide-down');
+    md.style.display = 'block';
+    // small timeout to allow browser to apply initial state before adding class
+    setTimeout(() => md.classList.add('slide-down'), 20);
+  }
+}
+
+function closeCatalogView() {
+  const bd = document.getElementById('catalogViewBackdrop');
+  const md = document.getElementById('catalogViewModal');
+  if (md) {
+    // start slide-up animation then hide
+    md.classList.remove('slide-down');
+    // after animation ends, hide elements
+    setTimeout(() => {
+      md.style.display = 'none';
+      if (bd) bd.style.display = 'none';
+    }, 340);
+  } else {
+    if (bd) bd.style.display = 'none';
+  }
+}
+
+/* Renders the catalog table; optional filterType: 'activo'|'pasivo'|'capital'|'resultados' or undefined for all */
+function renderCatalogView(filterType) {
+  const container = document.getElementById('catalogViewContent');
+  if (!container) return;
+  const types = ['activo','pasivo','capital','resultados'];
+  const toShow = filterType ? [filterType] : types;
+  container.innerHTML = '';
+
+  toShow.forEach(type => {
+    const list = accounts[type] || [];
+    const section = document.createElement('div');
+    section.style.marginBottom = '14px';
+    section.innerHTML = `<h4 style="margin-bottom:8px; text-transform:capitalize;">${type}</h4>`;
+    if (list.length === 0) {
+      section.innerHTML += '<div style="color:#888;">(Sin cuentas)</div>';
+      container.appendChild(section);
+      return;
+    }
+    const table = document.createElement('table');
+    table.style.width = '100%';
+    table.style.borderCollapse = 'collapse';
+    const thead = document.createElement('thead');
+    thead.innerHTML = '<tr><th style="text-align:left; padding:8px; border-bottom:1px solid #eee;">#</th><th style="text-align:left; padding:8px; border-bottom:1px solid #eee;">Cuenta</th><th style="text-align:left; padding:8px; border-bottom:1px solid #eee;">Acciones</th></tr>';
+    table.appendChild(thead);
+    const tbody = document.createElement('tbody');
+    list.forEach((acct, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td style="padding:8px; border-bottom:1px solid #f1f1f1; width:50px;">${idx+1}</td>
+                      <td style="padding:8px; border-bottom:1px solid #f1f1f1;">${escapeHtml(acct)}</td>
+                      <td style="padding:8px; border-bottom:1px solid #f1f1f1; width:120px;">
+                        <button class="action-icon edit" title="Editar" onclick="openCatalogEditForm('${type}', ${idx})">✏️</button>
+                        <button class="action-icon delete" title="Eliminar" onclick="deleteCatalogAccount('${type}', ${idx})">🗑️</button>
+                      </td>`;
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    section.appendChild(table);
+    container.appendChild(section);
+  });
+}
+
+/* Add new account via prompt, determine type by account code and re-sort the list */
+/* Open inline form to add a new catalog account */
+function openCatalogAddForm() {
+  document.getElementById('catalogFormTitle').textContent = 'Agregar Cuenta';
+  document.getElementById('catalogFormInput').value = '';
+  document.getElementById('catalogFormMsg').textContent = '';
+  document.getElementById('catalogFormType').value = 'activo';
+  document.getElementById('catalogForm').style.display = 'block';
+  // focus input
+  setTimeout(() => document.getElementById('catalogFormInput').focus(), 50);
+}
+
+/* Open inline form to edit an existing account */
+let catalogEditContext = null; // { type, index }
+function openCatalogEditForm(type, index) {
+  const current = (accounts[type] && accounts[type][index]) || '';
+  catalogEditContext = { type, index };
+  document.getElementById('catalogFormTitle').textContent = 'Editar Cuenta';
+  document.getElementById('catalogFormInput').value = current;
+  document.getElementById('catalogFormMsg').textContent = '';
+  document.getElementById('catalogFormType').value = type;
+  document.getElementById('catalogForm').style.display = 'block';
+  setTimeout(() => document.getElementById('catalogFormInput').focus(), 50);
+}
+
+/* Accept handler for both add and edit */
+function acceptCatalogForm() {
+  const value = (document.getElementById('catalogFormInput').value || '').trim();
+  const forcedType = document.getElementById('catalogFormType').value;
+  const msgEl = document.getElementById('catalogFormMsg');
+  msgEl.textContent = '';
+
+  if (!value) {
+    msgEl.textContent = 'La cuenta no puede estar vacía.';
+    return;
+  }
+  const parts = value.split(' - ');
+  const code = parts[0] ? parts[0].trim() : '';
+  if (!code) {
+    msgEl.textContent = 'Formato inválido. Debe incluir código y descripción.';
+    return;
+  }
+
+  // If editing existing account
+  if (catalogEditContext) {
+    const { type, index } = catalogEditContext;
+    accounts[type][index] = value;
+    // If user changed type in select, move to new type
+    if (type !== forcedType) {
+      // remove from old
+      accounts[type].splice(index, 1);
+      accounts[forcedType] = accounts[forcedType] || [];
+      if (!accounts[forcedType].includes(value)) accounts[forcedType].push(value);
+      accounts[forcedType].sort(compareAccountsByCode);
+    } else {
+      accounts[type].sort(compareAccountsByCode);
+    }
+    catalogEditContext = null;
+    populateAccountSelects();
+    renderCatalogView();
+    showNotification('Cuenta actualizada');
+    document.getElementById('catalogForm').style.display = 'none';
+    return;
+  }
+
+  // Adding new account: determine target type from code if user left default, otherwise allow forcedType
+  const firstDigit = code.split('.')[0] || '';
+  let targetType = 'resultados';
+  if (firstDigit === '1') targetType = 'activo';
+  else if (firstDigit === '2') targetType = 'pasivo';
+  else if (firstDigit === '3') targetType = 'capital';
+  else targetType = forcedType || 'resultados';
+
+  accounts[targetType] = accounts[targetType] || [];
+  if (accounts[targetType].includes(value)) {
+    msgEl.textContent = 'La cuenta ya existe en el catálogo';
+    return;
+  }
+  accounts[targetType].push(value);
+  accounts[targetType].sort(compareAccountsByCode);
+  populateAccountSelects();
+  renderCatalogView();
+  document.getElementById('catalogForm').style.display = 'none';
+  showNotification(`Cuenta agregada a ${targetType} y catálogo reordenado`);
+}
+
+/* Cancel add/edit */
+function cancelCatalogForm() {
+  catalogEditContext = null;
+  document.getElementById('catalogForm').style.display = 'none';
+  document.getElementById('catalogFormMsg').textContent = '';
+}
+
+/* Compare function: sort by numeric code segments before ' - ' */
+function compareAccountsByCode(a, b) {
+  try {
+    const ca = (a.split(' - ')[0] || '').split('.').map(s => parseInt(s, 10) || 0);
+    const cb = (b.split(' - ')[0] || '').split('.').map(s => parseInt(s, 10) || 0);
+    const len = Math.max(ca.length, cb.length);
+    for (let i = 0; i < len; i++) {
+      const na = ca[i] || 0;
+      const nb = cb[i] || 0;
+      if (na < nb) return -1;
+      if (na > nb) return 1;
+    }
+    return a.localeCompare(b);
+  } catch (e) {
+    return a.localeCompare(b);
+  }
+}
+
+/* Prompt to edit a single account */
+/* (Replaced) promptEditCatalog now uses inline editor openCatalogEditForm */
+
+/* Delete an account from catalog */
+function deleteCatalogAccount(type, index) {
+  if (!confirm('¿Eliminar esta cuenta del catálogo?')) return;
+  if (!accounts[type] || !accounts[type][index]) return;
+  accounts[type].splice(index, 1);
+  populateAccountSelects();
+  renderCatalogView(type);
+  showNotification('Cuenta eliminada del catálogo');
+}
+
+/* Save changes (writes current in-memory accounts to localStorage for persistence) */
+function saveCatalogChanges() {
+  // store a simple catalog object to localStorage
+  try {
+    const catalog = {
+      activo: accounts.activo || [],
+      pasivo: accounts.pasivo || [],
+      capital: accounts.capital || [],
+      resultados: accounts.resultados || []
+    };
+    localStorage.setItem('accountingAccountsCatalog', JSON.stringify(catalog));
+    showNotification('Cambios en el catálogo guardados (local)');
+  } catch (e) {
+    showNotification('Error al guardar catálogo');
+  }
+}
+
+/* small helper to safely escape HTML when injecting account strings */
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>"']/g, (s) => {
+    const map = { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' };
+    return map[s] || s;
+  });
+}
 function applySuggestedAccounts() {
   const type = document.getElementById('type').value;
   const debitSelect = document.getElementById('debitAccount');
   const creditSelect = document.getElementById('creditAccount');
+
+  // Show/hide return-specific fields when selecting devolución
+  const returnFields = document.getElementById('returnFields');
+  if (returnFields) {
+    if (type === 'devolucion') {
+      returnFields.style.display = 'block';
+      // ensure return product select is populated
+      populateReturnSelect();
+    } else {
+      returnFields.style.display = 'none';
+    }
+  }
 
   // Default fallback (keep first non-empty option)
   const firstDebit = debitSelect.options.length > 1 ? debitSelect.options[1].value : debitSelect.options[0].value;
@@ -1250,7 +1844,8 @@ function applySuggestedAccounts() {
     inversion: { debit: '1.1.2.1 - Bancos Nacionales', credit: '3.4.1.0 - Capital Social' },
     financiamiento: { debit: '1.1.2.1 - Bancos Nacionales', credit: '2.3.2.0 - Documentos por Pagar' },
     'ajuste-inventario': { debit: '1.1.6.1 - Inventario de Productos Terminados', credit: '3.4.0.0 - Capital' },
-    'ajuste-precio-venta': { debit: '3.4.0.0 - Capital', credit: '4.5.1.1 - Ventas Nacionales' }
+    'ajuste-precio-venta': { debit: '3.4.0.0 - Capital', credit: '4.5.1.1 - Ventas Nacionales' },
+    'devolucion': { debit: '1.1.6.1 - Inventario de Productos Terminados', credit: '4.5.1.1 - Ventas Nacionales' }
   };
 
   const s = suggestions[type] || { debit: firstDebit, credit: firstCredit };
@@ -1271,6 +1866,28 @@ function applySuggestedAccounts() {
   setIfExists(creditSelect, s.credit);
 }
 
+// Populate return product select (called when needed)
+function populateReturnSelect() {
+  const returnSel = document.getElementById('returnProductSelect');
+  if (!returnSel) return;
+  // clear and add current products
+  const current = returnSel.value;
+  returnSel.innerHTML = '';
+  products.forEach(p => {
+    const opt = new Option(`${p.name} — Stock: ${p.stock || 0}`, p.id);
+    returnSel.add(opt);
+  });
+  // try to restore previous selection if still exists
+  if (current) {
+    for (let i=0;i<returnSel.options.length;i++) {
+      if (returnSel.options[i].value === current) {
+        returnSel.value = current;
+        break;
+      }
+    }
+  }
+}
+
 function showTab(event, tabName) {
   document.querySelectorAll('.content').forEach(content => content.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
@@ -1286,11 +1903,65 @@ function showTab(event, tabName) {
 function handleTransaction(e) {
   e.preventDefault();
   
+  const typeVal = document.getElementById('type').value;
   const debitAccount = document.getElementById('debitAccount').value;
   const creditAccount = document.getElementById('creditAccount').value;
 
-  // Validate accounts exist in catalog
+  // Validate accounts exist in catalog (for normal and devolución flow)
   const allAccounts = Object.values(accounts).flat();
+
+  if (typeVal === 'devolucion') {
+    // Devolución: must have product and qty
+    const productId = document.getElementById('returnProductSelect').value;
+    const qty = Math.max(1, parseInt(document.getElementById('returnQty').value || '1', 10));
+    if (!productId) { showNotification('Seleccione el producto devuelto'); return; }
+    const prod = products.find(p=>p.id === productId);
+    if (!prod) { showNotification('Producto seleccionado no existe'); return; }
+
+    // Determine amount: prefer amount input if provided, else use product price * qty
+    let amountVal = parseFloat(document.getElementById('amount').value || '0');
+    if (!amountVal || amountVal <= 0) {
+      amountVal = parseFloat(((prod.price || 0) * qty).toFixed(2));
+    }
+
+    // Ensure suggested accounts exist in current catalog
+    const debitSuggested = '1.1.6.1 - Inventario de Productos Terminados';
+    const creditSuggested = '4.5.1.1 - Ventas Nacionales';
+    if (!allAccounts.includes(debitSuggested) || !allAccounts.includes(creditSuggested)) {
+      showNotification('El catálogo actual no contiene las cuentas necesarias para registrar una devolución');
+      return;
+    }
+
+    // Update stock: reincorporar cantidad
+    prod.stock = (prod.stock || 0) + qty;
+
+    const today = document.getElementById('date').value || new Date().toISOString().split('T')[0];
+    const description = document.getElementById('description').value || `Devolución de ${qty} x ${prod.name}`;
+
+    const transaction = {
+      date: today,
+      type: 'devolucion',
+      debitAccount: debitSuggested,
+      creditAccount: creditSuggested,
+      amount: parseFloat(amountVal.toFixed(2)),
+      description,
+      debitCode: debitSuggested.split(' - ')[0],
+      creditCode: creditSuggested.split(' - ')[0]
+    };
+
+    transactions.push(transaction);
+    updateTransactionsTable();
+    populateProducts();
+    saveToLocalStorage();
+    showNotification(`Devolución registrada: ${qty} unidad(es) reincorporadas a stock y partida contable generada`);
+    e.target.reset();
+    // hide return fields after submit
+    const returnFields = document.getElementById('returnFields');
+    if (returnFields) returnFields.style.display = 'none';
+    return;
+  }
+
+  // Normal transaction flow
   if (!allAccounts.includes(debitAccount) || !allAccounts.includes(creditAccount)) {
     showNotification('Por favor seleccione cuentas válidas del catálogo cargado');
     return;
@@ -1547,6 +2218,127 @@ function saveToLocalStorage() {
   localStorage.setItem('accountingProducts', JSON.stringify(products));
 }
 
+// Company info persistence
+function saveCompanyToLocalStorage(company) {
+  localStorage.setItem('accountingCompany', JSON.stringify(company));
+}
+
+function loadCompanyFromLocalStorage() {
+  const saved = localStorage.getItem('accountingCompany');
+  if (!saved) return null;
+  try {
+    return JSON.parse(saved);
+  } catch (e) {
+    return null;
+  }
+}
+
+// Company modal controls
+function openCompanyModal() {
+  const c = loadCompanyFromLocalStorage();
+  if (c) {
+    document.getElementById('companyName').value = c.name || '';
+    document.getElementById('companyResponsible').value = c.responsible || '';
+    document.getElementById('companyEmail').value = c.email || '';
+    document.getElementById('companyActivity').value = c.activity || '';
+    document.getElementById('companyPhone').value = c.phone || '';
+    document.getElementById('companyRegistry').value = c.registry || '';
+    document.getElementById('companyNIT').value = c.nit || '';
+  } else {
+    document.getElementById('companyName').value = '';
+    document.getElementById('companyResponsible').value = '';
+    document.getElementById('companyEmail').value = '';
+    document.getElementById('companyActivity').value = '';
+    document.getElementById('companyPhone').value = '';
+    document.getElementById('companyRegistry').value = '';
+    document.getElementById('companyNIT').value = '';
+  }
+  document.getElementById('companyNameMsg').textContent = '';
+  document.getElementById('companyRespMsg').textContent = '';
+  document.getElementById('companyEmailMsg').textContent = '';
+  document.getElementById('companyBackdrop').style.display = 'block';
+  document.getElementById('companyModal').style.display = 'block';
+}
+
+function closeCompanyModal() {
+  document.getElementById('companyBackdrop').style.display = 'none';
+  document.getElementById('companyModal').style.display = 'none';
+}
+
+function validateCompanyInputs(name, responsible, email) {
+  let ok = true;
+  document.getElementById('companyNameMsg').textContent = '';
+  document.getElementById('companyRespMsg').textContent = '';
+  document.getElementById('companyEmailMsg').textContent = '';
+
+  if (!name || !name.trim()) {
+    document.getElementById('companyNameMsg').textContent = 'Nombre de la empresa es obligatorio.';
+    ok = false;
+  }
+  if (!responsible || !responsible.trim()) {
+    document.getElementById('companyRespMsg').textContent = 'Responsable es obligatorio.';
+    ok = false;
+  }
+  if (!email || !email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    document.getElementById('companyEmailMsg').textContent = 'Correo válido es obligatorio.';
+    ok = false;
+  }
+  return ok;
+}
+
+function saveCompany() {
+  const name = document.getElementById('companyName').value;
+  const responsible = document.getElementById('companyResponsible').value;
+  const email = document.getElementById('companyEmail').value;
+  const activity = document.getElementById('companyActivity').value;
+  const phone = document.getElementById('companyPhone').value;
+  const registry = document.getElementById('companyRegistry').value;
+  const nit = document.getElementById('companyNIT').value;
+
+  if (!validateCompanyInputs(name, responsible, email)) return;
+
+  const company = {
+    name: name.trim(),
+    responsible: responsible.trim(),
+    email: email.trim(),
+    activity: activity.trim(),
+    phone: phone.trim(),
+    registry: registry.trim(),
+    nit: nit.trim()
+  };
+
+  saveCompanyToLocalStorage(company);
+  renderCompanyInfo();
+  closeCompanyModal();
+  showNotification('Información de la empresa guardada');
+}
+
+function renderCompanyInfo() {
+  const container = document.getElementById('companyInfo');
+  const c = loadCompanyFromLocalStorage();
+  if (!container) return;
+  if (!c) {
+    container.innerHTML = '<em style="color:#888;">No hay información de empresa guardada.</em>';
+    return;
+  }
+  container.innerHTML = `
+    <strong>${c.name}</strong>
+    <div style="color:#666; margin-top:6px;">
+      <div><strong>Responsable:</strong> ${c.responsible}</div>
+      <div><strong>Correo:</strong> ${c.email}</div>
+      ${c.phone ? `<div><strong>Teléfono:</strong> ${c.phone}</div>` : ''}
+      ${c.activity ? `<div><strong>Giro:</strong> ${c.activity}</div>` : ''}
+      ${c.registry ? `<div><strong>Registro:</strong> ${c.registry}</div>` : ''}
+      ${c.nit ? `<div><strong>NIT:</strong> ${c.nit}</div>` : ''}
+    </div>
+  `;
+}
+
+// render company info on load
+document.addEventListener('DOMContentLoaded', () => {
+  renderCompanyInfo();
+});
+
 function loadFromLocalStorage() {
   const saved = localStorage.getItem('accountingTransactions');
   const savedProducts = localStorage.getItem('accountingProducts');
@@ -1760,15 +2552,42 @@ function hideHelp() {
   document.getElementById('modalBackdrop').style.display = 'none';
 }
 
-function showNotification(message) {
+let _notificationTimeout = null;
+function showNotification(message, durationMs = 3500) {
+  // Clear any pending hide timeout so notifications remain visible for full duration
+  if (_notificationTimeout) {
+    clearTimeout(_notificationTimeout);
+    _notificationTimeout = null;
+  }
+
+  const modal = document.getElementById('notificationModal');
+  const backdrop = document.getElementById('notificationBackdrop');
+  if (!modal || !backdrop) return;
+
+  // Ensure notification is on top visually
+  modal.style.zIndex = 2401;
+  backdrop.style.zIndex = 2400;
+
   document.getElementById('notificationContent').textContent = message;
-  document.getElementById('notificationModal').style.display = 'block';
-  document.getElementById('notificationBackdrop').style.display = 'block';
+  modal.style.display = 'block';
+  backdrop.style.display = 'block';
+
+  // Auto-hide after specified duration (defaults ~3.5s)
+  _notificationTimeout = setTimeout(() => {
+    hideNotification();
+    _notificationTimeout = null;
+  }, durationMs);
 }
 
 function hideNotification() {
-  document.getElementById('notificationModal').style.display = 'none';
-  document.getElementById('notificationBackdrop').style.display = 'none';
+  const modal = document.getElementById('notificationModal');
+  const backdrop = document.getElementById('notificationBackdrop');
+  if (modal) modal.style.display = 'none';
+  if (backdrop) backdrop.style.display = 'none';
+  if (_notificationTimeout) {
+    clearTimeout(_notificationTimeout);
+    _notificationTimeout = null;
+  }
 }
 
 let transactionToDelete = null;
@@ -2103,5 +2922,9 @@ function generateBalancePDF() {
   showNotification('PDF del Balance General generado exitosamente');
 }
 </script>
+
+<!-- Security & performance module that patches storage, notification and sanitization -->
+<script type="module" src="./modules/app_security.js"></script>
+
 </body>
 </html>
