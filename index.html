@@ -221,12 +221,32 @@
     margin: 5px 0;
   }
 
-  /* Products list two-column layout */
+  /* Products list three-column scrollable window layout */
   #productsList {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 10px;
-    padding: 0;
+    padding: 10px;
+    list-style: none;
+    margin: 0;
+    /* make the products area behave like a window with vertical scrolling */
+    max-height: 420px;
+    overflow-y: auto;
+    background: #fafafa;
+    border: 1px solid #eee;
+    border-radius: 8px;
+  }
+
+  /* product "card" appearance inside the products window */
+  .product-item {
+    padding: 10px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
   }
 
   .product-item {
@@ -243,7 +263,7 @@
 
   .help-button {
     position: fixed;
-    top: 20px;
+    top: 86px; /* lowered to align visually with the menu / tabs */
     right: 20px;
     width: 50px;
     height: 50px;
@@ -482,6 +502,28 @@
     opacity: 1;
     display: block;
   }
+
+  /* Fixed sizing for dashboard canvases to avoid layout-driven growth */
+  #inventoryChart, #salesChart, #summaryChart {
+    width: 100% !important;
+    height: 240px !important;
+    max-height: 240px;
+    display: block;
+  }
+
+  /* Powered-by animated label */
+  .powered {
+    font-weight: 700;
+    display: inline-block;
+    animation: pulsePower 3000ms linear infinite;
+    opacity: 1;
+  }
+
+  @keyframes pulsePower {
+    0% { opacity: 0.15; }
+    50% { opacity: 1; }
+    100% { opacity: 0.15; }
+  }
 </style>
 </head>
 <body>
@@ -489,53 +531,46 @@
 <div class="modal-backdrop" id="modalBackdrop" onclick="hideHelp()"></div>
 <div class="help-modal" id="helpModal">
   <button class="close-modal" onclick="hideHelp()">&times;</button>
-  <h2>Introducción y Propósito</h2>
 
-  <p>Esta aplicación es un entorno educativo para aprender los fundamentos de la contabilidad práctica: registrar transacciones, generar libros contables y entender cómo afectan el balance. Está diseñada para practicar registros contables en un catálogo simplificado y para sincronizar facturación con el libro diario y mayor.</p>
+  <h2>Introducción rápida</h2>
+  <p>Esta aplicación es un entorno educativo y operativo para practicar registros contables, administrar inventario y generar reportes (PDF/Excel). Está pensada para que arranques siempre desde cero y restaures datos solo mediante importación o respaldo.</p>
 
-  <h3>Objetivo educativo</h3>
-  <p>Aprender a identificar cuentas DEBE y HABER, clasificar tipos de transacciones (ventas, compras, gastos, pagos, crédito, inversión, financiamiento), y observar cómo cada operación impacta el Libro Diario, el Libro Mayor y el Balance General.</p>
-
-  <h3>Descripción de las opciones del menú</h3>
+  <h3>Estructura actual y funcionalidades clave</h3>
   <ul>
-    <li><strong>Ventas:</strong> Lista de productos y facturación; al facturar se genera automáticamente la transacción correspondiente (DEBE: Caja/Bancos, HABER: Ventas) y se sincroniza con la lista de transacciones.</li>
-    <li><strong>Compras:</strong> Registro de entradas de mercancía para aumentar el stock; permite ingresar compras a crédito o pago inmediato, agregar productos nuevos al inventario y, tras procesar la compra, se genera la transacción contable correspondiente (DEBE: Inventario, HABER: Proveedores/Caja/Bancos) y se sincroniza con la lista de transacciones.</li>
-    <li><strong>Transacciones:</strong> Formulario para registrar manualmente transacciones, con selección de fecha (la fecha por defecto sugerida es la actual), tipo, monto, cuenta DEBE y cuenta HABER; incluye edición, eliminación, búsqueda en las transacciones registradas e importación/exportación.</li>
-    <li><strong>Libro Diario:</strong> Muestra las anotaciones por fecha con las partidas DEBE y HABER desglosadas para cada transacción.</li>
-    <li><strong>Libro Mayor:</strong> Agrupa movimientos por cuenta mostrando los débitos, créditos y saldo acumulado por cuenta.</li>
-    <li><strong>Balance General:</strong> Presenta los Activos (lado izquierdo) y Pasivo + Capital (lado derecho) con totales para verificar que Pasivo + Capital cuadre con Activos.</li>
-    <li><strong>Reportes:</strong> Genera PDF o Excel del Libro Diario, Libro Mayor y Balance General para descarga o impresión.</li>
-    <li><strong>Herramientas:</strong> Agrupa utilidades administrativas y de intercambio de datos:
-      <ul>
-        <li><strong>Empresa:</strong> Formulario para guardar los datos principales de la empresa (Nombre*, Giro, Teléfono, Responsable*, Registro, NIT, Correo*). Los campos se presentan priorizados y algunos marcados como requeridos.</li>
-        <li><strong>Catálogo:</strong> Opción para descargar o cargar el catálogo de cuentas contables en formato JSON y así reemplazar o restaurar el catálogo usado por el sistema.</li>
-        <li><strong>Utilidades:</strong> Botones para Guardar Datos, Exportar JSON, Exportar Excel e Importar JSON que permiten exportar/importar las transacciones y respaldar la información del sistema.</li>
-      </ul>
-    </li>
+    <li><strong>Dashboard:</strong> Resúmenes visuales de inventario, ventas y compras; gráficos compactos por sección.</li>
+    <li><strong>Ventas:</strong> Catálogo de productos, armado de factura, gestión de stock y generación automática de la transacción contable (DEBE: Caja/Bancos, HABER: Ventas). Incluye panel "Registros de Ventas" filtrable por año/mes y exportable a Excel.</li>
+    <li><strong>Compras:</strong> Alta de nuevos productos, registro de compras (a crédito/pago) que actualizan stock y crean la transacción (DEBE: Inventario, HABER: Proveedores/Caja/Bancos). Contiene "Compras Registradas" con filtros y exportación.</li>
+    <li><strong>Transacciones:</strong> Formulario para crear transacciones manuales (venta, compra, gasto, pago, crédito, ajustes, devoluciones). Soporta edición, eliminación y búsqueda en el listado.</li>
+    <li><strong>Libro Diario / Libro Mayor / Balance General:</strong> Vistas contables generadas desde las transacciones; filtros por mes y exportación a PDF/Excel.</li>
+    <li><strong>Reportes:</strong> Generación de PDF y Excel: Libro Diario, Libro Mayor, Estado de Resultados, Balance, Kardex y Existencias de Inventario.</li>
+    <li><strong>Herramientas:</strong> Gestión de Empresa (guardar/descargar/importar datos), Catálogo de cuentas (ver/editar/descargar/importar), Inventario (agregar productos iniciales, ver/exportar/importar) y Utilidades (Guardar, Respaldo JSON, Exportar Excel, Importar JSON, Ejemplos Masivos).</li>
+    <li><strong>Seguridad y usabilidad:</strong> Las acciones destructivas usan confirmación por texto (p. ej. escribir "ELIMINAR" o "REINICIAR"), las notificaciones están en cola para no solaparse, y la persistencia usa envoltorios seguros para localStorage.</li>
   </ul>
 
-  <h3>Buenas prácticas al registrar</h3>
+  <h3>Flujos importantes</h3>
   <ol>
-    <li>Verifica que las cuentas seleccionadas pertenezcan al catálogo mostrado en el sistema.</li>
-    <li>Escribe descripciones claras que expliquen la naturaleza de la operación.</li>
-    <li>Revisa el Libro Diario y el Libro Mayor después de registrar para entender el efecto en saldos.</li>
+    <li>Para arrancar desde cero: usa "Eliminar Datos" en Herramientas — debe escribir el texto solicitado para confirmar y la app hará limpieza completa (memoria, localStorage, caches y service workers) y recargará la página.</li>
+    <li>Para restaurar información: importa un respaldo JSON válido (Respaldo generado por "Respaldo de Datos") o carga archivos específicos (Inventario, Catálogo, Empresa) desde sus controles de importación.</li>
+    <li>Antes de eliminar elementos del Catálogo o Productos la aplicación exige confirmación escrita para evitar borrados accidentales.</li>
   </ol>
 
-  <h3>Ejemplo práctico</h3>
-  <div class="example">
-    <h4>Venta en efectivo — Caso de ejemplo</h4>
-    <p>Imagina que vendes mercancía por $5,000 en efectivo.</p>
-    <ul>
-      <li>Tipo: Venta</li>
-      <li>Fecha: (la del día)</li>
-      <li>DEBE: 1.1.1.1 - Caja General ($5,000)</li>
-      <li>HABER: 4.5.1.1 - Ventas Nacionales ($5,000)</li>
-      <li>Descripción sugerida: "Venta de mercancía en efectivo — recibo #123"</li>
-    </ul>
-    <p>Al registrar esto en la pestaña Transacciones (o al facturar desde Ventas), verás dos entradas en el Libro Diario y los saldos actualizados en el Libro Mayor y Balance General.</p>
-  </div>
+  <h3>Buenas prácticas al registrar</h3>
+  <ul>
+    <li>Comprueba que las cuentas seleccionadas existan en el Catálogo cargado.</li>
+    <li>Usa descripciones claras que incluyan, cuando sea posible, la cantidad y el nombre del producto (ej. "3x Smartphone X1").</li>
+    <li>Guarda respaldos periódicos con "Respaldo de Datos" y descarga Excel/PDF de libros antes de cambios masivos.</li>
+  </ul>
 
-  <p style="margin-top:20px; font-size:0.9em; color:#666; border-top:1px solid #eee; padding-top:10px;">© Derechos reservados a Carlos Alfredo Castillo Flores - ITCPO - 2025</p>
+  <h3>Atajos y recomendaciones</h3>
+  <ul>
+    <li>Si vas a probar la aplicación rápidamente, usa "Ejemplos Masivos" (Herramientas) para poblar productos, compras y ventas de prueba.</li>
+    <li>Editar precios desde el modal de producto puede generar transacciones de ajuste automático si hay stock; revisa el Libro Diario tras esos ajustes.</li>
+    <li>Utiliza las opciones de exportación (Excel/PDF) del panel Reportes para conservar snapshots periódicos.</li>
+  </ul>
+
+  <p style="margin-top:12px; font-size:0.9em; color:#666; border-top:1px solid #eee; padding-top:10px;">
+    Documentación mínima actualizada según la estructura y opciones presentes en esta versión: v5.9 — © Carlos Alfredo Castillo Flores · ITCPO
+  </p>
 </div>
 <div class="notification-backdrop" id="notificationBackdrop"></div>
 <div class="notification-modal" id="notificationModal">
@@ -627,29 +662,153 @@
       <input id="companyNIT" type="text" style="padding:8px; border:1px solid #ddd; border-radius:4px; width:100%;">
     </div>
 
-    <div style="display:flex; gap:10px; justify-content:flex-end; align-items:end;">
-      <div style="margin-left:auto;"></div>
-      <button class="btn btn-primary" onclick="saveCompany()" type="button">Guardar</button>
-      <button class="btn btn-warning" onclick="closeCompanyModal()" type="button">Cancelar</button>
+    <!-- New: Download / Import buttons grouped in two columns -->
+    <div style="grid-column: 1 / 3; display:flex; gap:10px; align-items:center; margin-top:6px;">
+      <button class="btn btn-success" style="flex:1; height:40px;" onclick="exportCompanyData()" type="button" title="Descargar datos de la empresa">Descargar</button>
+      <button class="btn btn-primary" style="flex:1; height:40px;" onclick="triggerCompanyImport()" type="button" title="Importar datos de la empresa">Importar</button>
+      <button class="btn btn-primary" style="flex:1; height:40px;" onclick="saveCompany()" type="button">Guardar</button>
+      <button class="btn btn-warning" style="flex:1; height:40px;" onclick="closeCompanyModal()" type="button">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- Hidden file input for importing company JSON -->
+  <input type="file" id="companyJsonInput" accept=".json,application/json" style="display:none;">
+</div>
+
+<!-- Inventory modal: agregar productos al inventario por primera vez -->
+<div class="modal-backdrop" id="inventoryBackdrop" style="display:none;"></div>
+<div class="confirmation-modal" id="inventoryModal" style="display:none; z-index:2200; min-width:420px;">
+  <h3 style="margin-top:0;">Agregar Producto al Inventario (Inicial)</h3>
+  <div style="display:flex; flex-direction:column; gap:10px; margin-top:10px;">
+    <div>
+      <label style="font-weight:700;">Nombre del producto</label>
+      <input id="initProductName" type="text" style="padding:8px; border:1px solid #ddd; border-radius:4px; width:100%;">
+      <div id="initNameMsg" style="color:#e74c3c; font-size:0.9em; min-height:18px;"></div>
+    </div>
+
+    <div style="display:flex; gap:8px;">
+      <div style="flex:1;">
+        <label style="font-weight:700;">Precio de costo</label>
+        <input id="initProductCost" type="number" min="0" step="0.01" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+        <div id="initCostMsg" style="color:#e74c3c; font-size:0.9em; min-height:18px;"></div>
+      </div>
+      <div style="flex:1;">
+        <label style="font-weight:700;">Precio de venta</label>
+        <input id="initProductPrice" type="number" min="0" step="0.01" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+        <div id="initPriceMsg" style="color:#e74c3c; font-size:0.9em; min-height:18px;"></div>
+      </div>
+    </div>
+
+    <div>
+      <label style="font-weight:700;">Stock inicial (opcional)</label>
+      <input id="initProductStock" type="number" min="0" step="1" value="0" style="width:120px; padding:8px; border:1px solid #ddd; border-radius:4px;">
+    </div>
+
+    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:6px; flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="addInitialInventoryProduct()" type="button" style="flex:1; min-width:120px;">Agregar al Inventario</button>
+      <button class="btn btn-success" onclick="openInventoryView()" type="button" style="flex:1; min-width:120px;" title="Ver productos en el inventario">Ver Inventario</button>
+      <button class="btn btn-warning" onclick="closeInventoryModal()" type="button" style="flex:1; min-width:120px;">Cancelar</button>
+      <button class="btn btn-success" onclick="exportInventoryJSON()" type="button" style="flex:1; min-width:120px;">Descargar</button>
+      <button class="btn btn-primary" onclick="triggerInventoryImport()" type="button" style="flex:1; min-width:120px;">Importar</button>
     </div>
   </div>
 </div>
+
+<!-- Hidden file input for importing inventory JSON -->
+<input type="file" id="inventoryJsonInput" accept=".json,application/json" style="display:none;">
+
+<!-- Inventory view modal -->
+<div class="modal-backdrop" id="inventoryViewBackdrop" style="display:none;"></div>
+<div class="confirmation-modal" id="inventoryViewModal" style="display:none; z-index:2200; min-width:480px; max-width:90%;">
+  <h3 style="margin-top:0;">Inventario - Productos Guardados</h3>
+  <div style="max-height:60vh; overflow:auto; margin-top:10px;">
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="background:#f7f9fc;">
+          <th style="padding:8px; text-align:left;">ID</th>
+          <th style="padding:8px; text-align:left;">Producto</th>
+          <th style="padding:8px; text-align:right;">Stock</th>
+          <th style="padding:8px; text-align:right;">Precio Venta</th>
+          <th style="padding:8px; text-align:right;">Precio Costo</th>
+        </tr>
+      </thead>
+      <tbody id="inventoryViewBody"></tbody>
+    </table>
+  </div>
+  <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:12px;">
+    <button class="btn btn-primary" onclick="closeInventoryView()">Cerrar</button>
+  </div>
+</div>
+
 <div class="container">
-  <h1 style="background-color: #f39c12; color: white; padding: 10px; border-radius: 5px; margin-bottom: 20px;">Sistema Contable by ITCPO</h1>
+  <div style="display:flex; align-items:center; justify-content:space-between; background-color:#f39c12; color:white; padding:10px; border-radius:5px; margin-bottom:20px;">
+    <div style="font-size:1.25em; font-weight:700;">Sistema Contable</div>
+    <div style="font-size:0.95em; opacity:0.95; text-align:right;">
+      <span class="powered">Powered by ITCPO&nbsp;&nbsp;</span>
+    </div>
+  </div>
   
   <div class="tabs">
-    <button class="tab active" onclick="showTab(event, 'sales')">Ventas</button>
+    <button class="tab active" onclick="showTab(event, 'dashboard')">Dashboard</button>
+    <button class="tab" onclick="showTab(event, 'sales')">Ventas</button>
     <button class="tab" onclick="showTab(event, 'purchases')">Compras</button>
     <button class="tab" onclick="showTab(event, 'transactions')">Transacciones</button>
-    <button class="tab" onclick="showTab(event, 'ledger')">Libro Diario</button>
-    <button class="tab" onclick="showTab(event, 'majorBook')">Libro Mayor</button>
-    <button class="tab" onclick="showTab(event, 'balance')">Balance General</button>
+    <button class="tab" onclick="showTab(event, 'statements')">Estados F.</button>
+    <button class="tab" onclick="showTab(event, 'analysis')">Análisis</button>
     <button class="tab" onclick="showTab(event, 'reports')">Reportes</button>
     <button class="tab" onclick="showTab(event, 'tools')">Herramientas</button>
   </div>
 
-  <div id="sales" class="content active">
+  <div id="dashboard" class="content active">
+    <h2 style="background-color:#2980b9; color:white; padding:10px; border-radius:5px; margin-bottom:12px;">Dashboard</h2>
+    <div style="display:flex; gap:10px; align-items:center; margin-bottom:8px;">
+      <label style="font-weight:700; font-size:0.95em; margin-right:8px;">Mes:</label>
+      <select id="dashboardMonthFilter" style="padding:6px; border:1px solid #ddd; border-radius:4px; width:160px;" onchange="renderDashboardCharts()">
+        <option value="all">Todos</option>
+      </select>
+      <div style="flex:1;"></div>
+    </div>
+
+    <!-- Top row: Resumen rápido (izquierda, más ancho) + Inventario (derecha) -->
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+      <div style="flex:2; min-width:320px; background:#fff; padding:12px; border-radius:8px; border:1px solid #eee;">
+        <h4 style="margin:0 0 10px 0;">Resumen rápido</h4>
+        <canvas id="summaryChart" width="800" height="240" aria-label="Resumen"></canvas>
+      </div>
+
+      <div style="flex:1; min-width:260px; background:#fff; padding:12px; border-radius:8px; border:1px solid #eee;">
+        <h4 style="margin:0 0 10px 0;">Inventario - Valor y Unidades</h4>
+        <canvas id="inventoryChart" width="400" height="240" aria-label="Grafico inventario"></canvas>
+      </div>
+    </div>
+
+    <!-- Bottom row: Ventas y Compras lado a lado -->
+    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:12px;">
+      <div style="flex:1; min-width:260px; background:#fff; padding:12px; border-radius:8px; border:1px solid #eee;">
+        <h4 style="margin:0 0 10px 0;">Ventas - Últimas Transacciones</h4>
+        <canvas id="salesChart" width="400" height="240" aria-label="Grafico ventas"></canvas>
+      </div>
+      <div style="flex:1; min-width:260px; background:#fff; padding:12px; border-radius:8px; border:1px solid #eee;">
+        <h4 style="margin:0 0 10px 0;">Compras - Últimas Transacciones</h4>
+        <canvas id="purchasesChart" width="400" height="240" aria-label="Grafico compras"></canvas>
+      </div>
+    </div>
+
+    <div style="margin-top:10px; display:flex; gap:8px; justify-content:flex-end;">
+      <button class="btn btn-primary" onclick="renderDashboardCharts()" type="button">Actualizar Dashboard</button>
+    </div>
+  </div>
+
+  <div id="sales" class="content">
     <h2 style="background-color: #1abc9c; color: white; padding: 10px; border-radius: 5px; margin-bottom: 20px;">Ventas - Facturación</h2>
+    <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
+      <label style="font-weight:700;">Mes:</label>
+      <select id="salesMonthFilter" style="padding:6px; border:1px solid #ddd; border-radius:4px; width:160px;" onchange="renderSectionCharts('sales')">
+        <option value="all">Todos</option>
+      </select>
+      <div style="flex:1;"></div>
+      <canvas id="salesMiniChart" width="240" height="120" style="width:240px; height:120px;"></canvas>
+    </div>
     <div style="display:flex; gap:20px; flex-wrap:wrap;">
       <div style="flex:1; min-width:260px;">
         <h3 style="margin-bottom:10px;">Productos Disponibles</h3>
@@ -657,8 +816,14 @@
       </div>
       <div style="flex:1; min-width:280px;">
         <h3 style="margin-bottom:10px;">Factura</h3>
-        <div style="display:flex; gap:8px; margin-bottom:8px;">
+        <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
           <select id="productSelect" style="flex:1;"></select>
+          <select id="invoiceTransactionType" style="width:160px; padding:8px; border:1px solid #ddd; border-radius:4px;">
+            <option value="contado">contado</option>
+            <option value="crédito">crédito</option>
+            <option value="tarjeta">tarjeta</option>
+            <option value="transferencia">transferencia</option>
+          </select>
           <input id="productQty" type="number" min="1" value="1" style="width:80px; padding:8px; border:1px solid #ddd; border-radius:4px;">
         </div>
         <div style="display:flex; gap:10px;">
@@ -675,6 +840,53 @@
             <tr><td colspan="3" style="text-align:right; font-weight:bold;">Total:</td><td id="invoiceTotal">$0.00</td><td></td></tr>
           </tfoot>
         </table>
+
+        <!-- Nuevo apartado: Registros de Ventas (moved below Factura) -->
+        <div id="salesRecordsPanel" style="margin-top:16px; border-top:1px solid #eee; padding-top:12px;">
+          <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+            <h4 style="margin:0; font-size:1.05em;">Registros de Ventas</h4>
+            <div style="flex:1;"></div>
+            <label style="font-weight:700; font-size:0.9em;">Año:</label>
+            <select id="salesRecordYear" style="padding:6px; border:1px solid #ddd; border-radius:4px; width:110px;"></select>
+            <label style="font-weight:700; font-size:0.9em;">Mes:</label>
+            <select id="salesRecordMonth" style="padding:6px; border:1px solid #ddd; border-radius:4px; width:130px;">
+              <option value="all">Todos</option>
+              <option value="01">Ene</option>
+              <option value="02">Feb</option>
+              <option value="03">Mar</option>
+              <option value="04">Abr</option>
+              <option value="05">May</option>
+              <option value="06">Jun</option>
+              <option value="07">Jul</option>
+              <option value="08">Ago</option>
+              <option value="09">Sep</option>
+              <option value="10">Oct</option>
+              <option value="11">Nov</option>
+              <option value="12">Dic</option>
+            </select>
+            <button class="btn btn-primary" id="refreshSalesRecords" style="margin-left:8px;">Actualizar</button>
+          </div>
+
+          <div style="background:#fff; border:1px solid #ececec; border-radius:8px; padding:10px;">
+            <div style="overflow:auto; max-height:220px;">
+              <table id="salesRecordsTable" style="width:100%; border-collapse:collapse; font-size:0.95em;">
+                <thead>
+                  <tr style="background:#f7f9fc;">
+                    <th style="padding:8px; text-align:left; min-width:120px;">Fecha</th>
+                    <th style="padding:8px; text-align:left;">Descripción</th>
+                    <th style="padding:8px; text-align:right; min-width:120px;">Monto</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+              <div id="salesRecordsSummary" style="font-weight:700; color:#333; align-self:center;">Total: $0.00</div>
+              <button class="btn btn-success" onclick="exportSalesRecordsToExcel()">Exportar (Excel)</button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
     <p style="margin-top:14px; color:#666; font-size:0.9em;">Al facturar, se registrará automáticamente una transacción con cuentas DEBE (Caja/Bancos) y HABER (Ventas) y se sincronizará con la lista de transacciones.</p>
@@ -682,16 +894,28 @@
 
   <div id="purchases" class="content">
     <h2 style="background-color: #f39c12; color: white; padding: 10px; border-radius: 5px; margin-bottom: 20px;">Compras - Entrada de Mercancía</h2>
+    <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
+      <label style="font-weight:700;">Mes:</label>
+      <select id="purchasesMonthFilter" style="padding:6px; border:1px solid #ddd; border-radius:4px; width:160px;" onchange="renderSectionCharts('purchases')">
+        <option value="all">Todos</option>
+      </select>
+      <div style="flex:1;"></div>
+      <canvas id="purchasesMiniChart" width="240" height="120" style="width:240px; height:120px;"></canvas>
+    </div>
     <div style="display:flex; gap:20px; flex-wrap:wrap;">
       <div style="flex:1; min-width:260px;">
-        <h3 style="margin-bottom:10px;">Productos en Inventario</h3>
-        <ul id="productsListPurchases" style="list-style:none; padding:0;"></ul>
-        <h4 style="margin-top:12px;">Agregar Producto Nuevo</h4>
+        <h4 style="margin-top:0; margin-bottom:12px;">Agregar Producto Nuevo</h4>
         <div style="display:flex; gap:8px; margin-bottom:8px;">
           <input id="newProductName" placeholder="Nombre del producto" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:4px;">
-          <input id="newProductPrice" type="number" min="0" step="0.01" placeholder="Precio" style="width:100px; padding:8px; border:1px solid #ddd; border-radius:4px;">
+          <input id="newProductCost" type="number" min="0" step="0.01" placeholder="Precio de costo" style="width:120px; padding:8px; border:1px solid #ddd; border-radius:4px;">
+          <input id="newProductPrice" type="number" min="0" step="0.01" placeholder="Precio de venta" style="width:120px; padding:8px; border:1px solid #ddd; border-radius:4px;">
         </div>
         <button class="btn btn-primary" onclick="addNewProduct()" type="button">Agregar Producto</button>
+
+        <hr style="margin:14px 0; border:none; border-top:1px solid #eee;">
+
+        <h3 style="margin-bottom:10px;">Productos en Inventario</h3>
+        <ul id="productsListPurchases" style="list-style:none; padding:10px; display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; max-height:420px; overflow-y:auto; background:#fafafa; border:1px solid #eee; border-radius:8px;"></ul>
       </div>
       <div style="flex:1; min-width:280px;">
         <h3 style="margin-bottom:10px;">Registrar Compra</h3>
@@ -700,7 +924,8 @@
           <input id="purchaseQty" type="number" min="1" value="1" style="width:80px; padding:8px; border:1px solid #ddd; border-radius:4px;">
         </div>
         <div style="display:flex; gap:8px; margin-bottom:8px;">
-          <input id="purchasePrice" type="number" min="0" step="0.01" placeholder="Precio unitario" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:4px;">
+          <input id="purchasePrice" type="number" min="0" step="0.01" placeholder="Precio de compra" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:4px;">
+          <input id="purchaseSalePrice" type="number" min="0" step="0.01" placeholder="Precio de venta" style="width:150px; padding:8px; border:1px solid #ddd; border-radius:4px;">
           <select id="purchasePaymentMethod" style="width:160px; padding:8px; border:1px solid #ddd; border-radius:4px;">
             <option value="2.3.1.1 - Proveedores Nacionales">A crédito - Proveedores</option>
             <option value="1.1.2.1 - Bancos Nacionales">Pago - Bancos</option>
@@ -721,13 +946,62 @@
             <tr><td colspan="3" style="text-align:right; font-weight:bold;">Total:</td><td id="purchaseTotal">$0.00</td><td></td></tr>
           </tfoot>
         </table>
+
+        <!-- Nuevo: Listado de Compras Registradas -->
+        <div style="margin-top:16px; border-top:1px solid #eee; padding-top:12px;">
+          <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+            <h4 style="margin:0; font-size:1.05em;">Compras Registradas</h4>
+            <div style="flex:1;"></div>
+            <label style="font-weight:700; font-size:0.9em;">Mes:</label>
+            <select id="purchasesListMonthFilter" style="padding:6px; border:1px solid #ddd; border-radius:4px; width:160px;">
+              <option value="all">Todos</option>
+            </select>
+            <button class="btn btn-primary" id="refreshPurchasesList" style="margin-left:8px;">Actualizar</button>
+          </div>
+
+          <div style="background:#fff; border:1px solid #ececec; border-radius:8px; padding:10px;">
+            <div style="overflow:auto; max-height:220px;">
+              <table id="purchasesListTable" style="width:100%; border-collapse:collapse; font-size:0.95em;">
+                <thead>
+                  <tr style="background:#f7f9fc;">
+                    <th style="padding:8px; text-align:left; min-width:120px;">Fecha</th>
+                    <th style="padding:8px; text-align:left;">Descripción</th>
+                    <th style="padding:8px; text-align:right; min-width:100px;">Monto</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="2" style="text-align:right; font-weight:bold; padding:8px;">Subtotal:</td>
+                    <td id="purchasesListSubtotal" style="text-align:right; font-weight:bold; padding:8px;">$0.00</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+              <div id="purchasesListSummary" style="font-weight:700; color:#333; align-self:center;">Total items: 0</div>
+              <button class="btn btn-success" onclick="exportPurchasesToExcel()">Exportar (Excel)</button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
     <p style="margin-top:14px; color:#666; font-size:0.9em;">Al registrar la compra se actualizará el stock y se generará automáticamente la transacción contable (DEBE: Inventario, HABER: Proveedores/Caja/Bancos) que se sincronizará con Transacciones.</p>
   </div>
 
   <div id="transactions" class="content">
-    <h2 style="background-color: #2ecc71; color: white; padding: 10px; border-radius: 5px; margin-bottom: 20px;">Registro de Transacciones</h2>
+    <h2 style="background-color: #2ecc71; color: white; padding: 10px; border-radius: 5px; margin-bottom: 12px;">Registro de Transacciones</h2>
+
+    <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
+      <label style="font-weight:700;">Mes:</label>
+      <select id="transactionsMonthFilter" style="padding:6px; border:1px solid #ddd; border-radius:4px; width:160px;" onchange="filterTransactions(); renderSectionCharts('transactions')">
+        <option value="all">Todos</option>
+      </select>
+      <div style="flex:1;"></div>
+      <canvas id="transactionsMiniChart" width="240" height="120" style="width:240px; height:120px;"></canvas>
+    </div>
     <form id="transactionForm">
       <div class="form-row">
         <div class="form-group">
@@ -786,7 +1060,6 @@
       </div>
       <div style="display: flex; gap: 10px;">
         <button type="submit" class="btn btn-primary">Registrar Transacción</button>
-        <button type="button" onclick="addExampleTransactions()" class="btn btn-success">Ejemplo</button>
         <button type="button" onclick="clearExampleTransactions()" class="btn btn-primary">Limpiar</button>
       </div>
 
@@ -797,7 +1070,7 @@
 
       <!-- Search field to filter transactions -->
       <div style="margin-bottom:12px; display:flex; gap:8px; align-items:center;">
-        <input id="transactionsSearch" placeholder="Buscar transacción (fecha, tipo, cuenta, descripción...)" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:4px;">
+        <input id="transactionsSearch" placeholder="Buscar transacción (fecha, tipo, cuenta, descripción...)" style="flex:1; padding:8px; border:1px solid #ddd; border-radius:4px;" oninput="filterTransactions()">
         <button class="btn btn-primary" onclick="clearTransactionsSearch()" type="button" style="padding:8px 10px;">Limpiar</button>
       </div>
 
@@ -819,7 +1092,18 @@
   </div>
 
   <div id="ledger" class="content">
-    <h2>Libro Diario</h2>
+    <h2 style="display:flex; align-items:center; gap:10px;">
+      <button class="btn btn-primary" onclick="showTab(null, 'statements')" title="Volver a Estados F." style="padding:6px 10px; font-weight:700; border-radius:6px;">◀</button>
+      <span>Libro Diario</span>
+    </h2>
+    <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
+      <label style="font-weight:700;">Mes:</label>
+      <select id="ledgerMonthFilter" style="padding:6px; border:1px solid #ddd; border-radius:4px; width:160px;" onchange="renderSectionCharts('ledger'); updateLedger();">
+        <option value="all">Todos</option>
+      </select>
+      <div style="flex:1;"></div>
+      <canvas id="ledgerMiniChart" width="240" height="120" style="width:240px; height:120px;"></canvas>
+    </div>
     <table id="ledgerTable">
       <thead>
         <tr>
@@ -835,12 +1119,34 @@
   </div>
 
   <div id="majorBook" class="content">
-    <h2>Libro Mayor</h2>
+    <h2 style="display:flex; align-items:center; gap:10px;">
+      <button class="btn btn-primary" onclick="showTab(null, 'statements')" title="Volver a Estados F." style="padding:6px 10px; font-weight:700; border-radius:6px;">◀</button>
+      <span>Libro Mayor</span>
+    </h2>
+    <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
+      <label style="font-weight:700;">Mes:</label>
+      <select id="majorBookMonthFilter" style="padding:6px; border:1px solid #ddd; border-radius:4px; width:160px;" onchange="renderSectionCharts('majorBook')">
+        <option value="all">Todos</option>
+      </select>
+      <div style="flex:1;"></div>
+      <canvas id="majorBookMiniChart" width="240" height="120" style="width:240px; height:120px;"></canvas>
+    </div>
     <div id="majorBookContent"></div>
   </div>
 
   <div id="balance" class="content">
-    <h2>Balance General</h2>
+    <h2 style="display:flex; align-items:center; gap:10px;">
+      <button class="btn btn-primary" onclick="showTab(null, 'statements')" title="Volver a Estados F." style="padding:6px 10px; font-weight:700; border-radius:6px;">◀</button>
+      <span>Balance General</span>
+    </h2>
+    <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
+      <label style="font-weight:700;">Mes:</label>
+      <select id="balanceMonthFilter" style="padding:6px; border:1px solid #ddd; border-radius:4px; width:160px;" onchange="renderSectionCharts('balance')">
+        <option value="all">Todos</option>
+      </select>
+      <div style="flex:1;"></div>
+      <canvas id="balanceMiniChart" width="240" height="120" style="width:240px; height:120px;"></canvas>
+    </div>
     <table id="balanceTable">
       <thead>
         <tr>
@@ -852,25 +1158,204 @@
     </table>
   </div>
 
-  <div id="reports" class="content">
-    <h2>Reportes en PDF</h2>
-    <div class="form-row" style="margin-top: 20px;">
-      <div class="form-group">
-        <button onclick="generateLedgerPDF()" class="btn btn-brown">
-          <i class="fas fa-file-pdf"></i> Generar Libro Diario
-        </button>
+  <div id="results" class="content">
+    <h2 style="display:flex; align-items:center; gap:10px;">
+      <button class="btn btn-primary" onclick="showTab(null, 'statements')" title="Volver a Estados F." style="padding:6px 10px; font-weight:700; border-radius:6px;">◀</button>
+      <span>Estado de Resultados</span>
+    </h2>
+    <div style="padding:12px; background:#fff; border-radius:8px; border:1px solid #eee; min-height:120px;">
+      <div id="resultsContent">
+        <p style="color:#666; margin:0;">Resumen del Estado de Resultados. Use "Analizar" para ver un diagnóstico y recomendaciones.</p>
       </div>
-      <div class="form-group">
-        <button onclick="generateMajorBookPDF()" class="btn btn-orange">
-          <i class="fas fa-file-pdf"></i> Generar Libro Mayor
-        </button>
-      </div>
-      <div class="form-group">
-        <button onclick="generateBalancePDF()" class="btn btn-black">
-          <i class="fas fa-file-pdf"></i> Generar Balance General
-        </button>
+      <div style="margin-top:12px; display:flex; gap:8px; justify-content:flex-end;">
+        <button class="btn btn-primary" onclick="analyzeMajorResults()" type="button">Analizar</button>
+        <button class="btn btn-success" onclick="generateResultsPDF()" type="button">Exportar PDF</button>
       </div>
     </div>
+  </div>
+
+  <!-- Nuevo: Estado de Flujos de Efectivo -->
+  <div id="cashflows" class="content">
+    <h2 style="display:flex; align-items:center; gap:10px;">
+      <button class="btn btn-primary" onclick="showTab(null, 'statements')" title="Volver a Estados F." style="padding:6px 10px; font-weight:700; border-radius:6px;">◀</button>
+      <span>Estado de Flujos de Efectivo</span>
+    </h2>
+    <div style="padding:12px; background:#fff; border-radius:8px; border:1px solid #eee; min-height:140px;">
+      <div id="cashflowsContent">
+        <p style="color:#666; margin:0;">Resumen de flujos de efectivo (operación, inversión y financiación). Presiona "Analizar" para calcular flujos a partir de transacciones registradas.</p>
+      </div>
+      <div style="margin-top:12px; display:flex; gap:8px; justify-content:flex-end;">
+        <button class="btn btn-primary" onclick="analyzeCashFlows()" type="button">Analizar</button>
+        <button class="btn btn-success" onclick="generateCashFlowsPDF()" type="button">Exportar PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nuevo: Estado de Resultados Integrales -->
+  <div id="comprehensiveResults" class="content">
+    <h2 style="display:flex; align-items:center; gap:10px;">
+      <button class="btn btn-primary" onclick="showTab(null, 'statements')" title="Volver a Estados F." style="padding:6px 10px; font-weight:700; border-radius:6px;">◀</button>
+      <span>Estado de Resultados Integrales</span>
+    </h2>
+    <div style="padding:12px; background:#fff; border-radius:8px; border:1px solid #eee; min-height:140px;">
+      <div id="comprehensiveContent">
+        <p style="color:#666; margin:0;">Presentación del resultado integral (resultado neto + otros resultados integrales). Use "Generar" para preparar un resumen.</p>
+      </div>
+      <div style="margin-top:12px; display:flex; gap:8px; justify-content:flex-end;">
+        <button class="btn btn-primary" onclick="buildComprehensiveResults()" type="button">Generar</button>
+        <button class="btn btn-success" onclick="generateComprehensiveResultsPDF()" type="button">Exportar PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="analysis" class="content">
+    <h2 style="background-color: #16a085; color: white; padding: 10px; border-radius: 5px; margin-bottom: 20px;">Análisis</h2>
+    <div style="padding:12px; background:#fff; border-radius:8px; border:1px solid #eee;">
+      <p style="color:#666; margin-bottom:10px;">Panel de análisis con resúmenes y métricas rápidas del sistema (ventas, compras, movimiento de inventario, resultados).</p>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="analyzeMajorResults()" type="button">Análisis Estado de Resultado Mayor</button>
+        <button class="btn btn-success" onclick="analyzeBalance()" type="button">Analizar Balance</button>
+      </div>
+      <div id="analysisContent" style="margin-top:12px; color:#333;"></div>
+    </div>
+  </div>
+
+  <div id="reports" class="content">
+    <h2>Reportes en PDF</h2>
+
+    <!-- Main report buttons: arranged in three columns -->
+    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; margin-top:12px;">
+      <div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #eee;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+          <div>
+            <strong>Libro Diario</strong>
+            <div style="color:#666; font-size:0.9em;">Genera el Libro Diario en PDF</div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
+            <button onclick="generateLedgerPDF()" class="btn btn-brown">Generar</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #eee;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+          <div>
+            <strong>Libro Mayor</strong>
+            <div style="color:#666; font-size:0.9em;">Genera el Libro Mayor en PDF</div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
+            <button onclick="generateMajorBookPDF()" class="btn btn-orange">Generar</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #eee;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+          <div>
+            <strong>Estado de Resultados</strong>
+            <div style="color:#666; font-size:0.9em;">Genera Estado de Resultados en PDF</div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
+            <button onclick="generateResultsPDF()" class="btn btn-primary">Generar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2 -->
+      <div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #eee;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+          <div>
+            <strong>Balance General</strong>
+            <div style="color:#666; font-size:0.9em;">Genera Balance General en PDF</div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-end;">
+            <button onclick="generateBalancePDF()" class="btn btn-black">Generar</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #eee;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+          <div>
+            <strong>Kardex de Inventario</strong>
+            <div style="color:#666; font-size:0.9em;">Movimientos por producto (PDF)</div>
+          </div>
+          <div>
+            <button class="btn btn-primary" onclick="generateKardexPDF()">Generar</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #eee;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+          <div>
+            <strong>Exportar Kardex</strong>
+            <div style="color:#666; font-size:0.9em;">Exportar Kardex a Excel</div>
+          </div>
+          <div>
+            <button class="btn btn-success" onclick="exportKardexToExcel()">Exportar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 3: New requested reports with their montos / counts -->
+      <div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #eee;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div>
+            <strong>Reporte de Inventario</strong>
+            <div style="color:#666; font-size:0.9em;">Valor total del inventario</div>
+            <div style="margin-top:6px; font-weight:700; color:#2c3e50;">Monto: <span id="inventoryReportAmount">$0.00</span></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <button class="btn btn-primary" onclick="generateInventoryExistencePDF()">Generar PDF</button>
+            <button class="btn btn-success" onclick="exportInventoryExistenceToExcel()">Exportar Excel</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #eee;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div>
+            <strong>Datos de la Empresa</strong>
+            <div style="color:#666; font-size:0.9em;">Exporta los datos guardados de la empresa</div>
+            <div style="margin-top:6px; font-weight:700; color:#2c3e50;">Estado: <span id="companyReportInfo">No guardada</span></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <button class="btn btn-success" onclick="exportCompanyData()">Descargar</button>
+            <button class="btn btn-primary" onclick="openCompanyModal()">Ver / Editar</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#fff; padding:10px; border-radius:8px; border:1px solid #eee;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div>
+            <strong>Catálogo de Cuentas</strong>
+            <div style="color:#666; font-size:0.9em;">Descarga o visualiza el catálogo</div>
+            <div style="margin-top:6px; font-weight:700; color:#2c3e50;">Total cuentas: <span id="catalogReportCount">0</span></div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <button class="btn btn-primary" onclick="exportAccountsCatalog()">Descargar</button>
+            <button class="btn btn-success" onclick="openCatalogView()">Ver Catálogo</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Estados Financieros (botones de acceso a los estados) -->
+  <div id="statements" class="content">
+    <h2 style="background-color:#7f8c8d; color: white; padding: 10px; border-radius: 5px; margin-bottom: 20px;">Estados Financieros</h2>
+    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+      <button class="btn btn-brown" onclick="showTab(null, 'ledger')" type="button">Libro Diario</button>
+      <button class="btn btn-orange" onclick="showTab(null, 'majorBook')" type="button">Libro Mayor</button>
+      <button class="btn btn-black" onclick="showTab(null, 'balance')" type="button">Balance General</button>
+      <button class="btn btn-success" onclick="showTab(null, 'cashflows')" type="button">Estado de Flujos de Efectivo</button>
+      <button class="btn btn-warning" onclick="showTab(null, 'comprehensiveResults')" type="button">Estado de Resultados Integrales</button>
+      <div style="flex:1"></div>
+    </div>
+    <p style="color:#666; font-size:0.95em;">Use los botones para abrir cada sección de los estados (se abrirá la vista correspondiente dentro de la misma aplicación).</p>
   </div>
 
   <!-- Herramientas -->
@@ -883,6 +1368,7 @@
         <div style="display:flex; gap:8px; align-items:center;">
           <button class="btn btn-primary" onclick="openCompanyModal()" type="button">Empresa</button>
           <button class="btn btn-brown" onclick="openCatalogModal()" type="button">Catálogo</button>
+          <button class="btn btn-success" onclick="openInventoryModal()" type="button" title="Agregar productos al inventario">Inventario</button>
         </div>
       </div>
 
@@ -900,8 +1386,10 @@
         <p style="color:#666; font-size:0.95em; margin-bottom:8px;">Acciones para guardar y exportar/importar datos del sistema.</p>
         <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
           <button class="btn btn-primary" onclick="saveData()" type="button" title="Guardar datos localmente">Guardar Datos</button>
-          <button class="btn btn-success" onclick="exportToJSON()" type="button" title="Exportar transacciones a JSON">Exportar JSON</button>
+          <button class="btn btn-success" onclick="respaldoDatos()" type="button" title="Respaldo completo de datos a JSON">Respaldo de Datos</button>
+          <button class="btn btn-danger" onclick="deleteAllData()" type="button" title="Eliminar todos los datos">Eliminar Datos</button>
           <button class="btn btn-warning" onclick="exportToExcel()" type="button" title="Exportar a Excel">Exportar Excel</button>
+          <button class="btn btn-success" onclick="addExampleTransactions()" type="button" title="Agregar ejemplos masivos">Ejemplos Masivos</button>
           <button class="btn btn-warning" onclick="document.getElementById('jsonInput').click()" type="button" title="Importar transacciones desde JSON">Importar JSON</button>
           <input type="file" id="jsonInput" style="display: none;" accept=".json">
           <input type="file" id="catalogInput" style="display: none;" accept=".json">
@@ -971,12 +1459,13 @@
   </div>
 
   
-  <footer style="text-align:center; margin-top:20px; color:#666; font-size:0.9em;">© Derechos reservados a Carlos Alfredo Castillo Flores - ITCPO - 2025</footer>
+  <footer style="text-align:center; margin-top:20px; color:#666; font-size:0.9em;">© Derechos reservados a Carlos Alfredo Castillo Flores - ITCPO - 2025 · v5.9</footer>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <script>
 function formatMoney(amount) {
@@ -1044,15 +1533,111 @@ const accounts = {
 
 let transactions = [];
 
-// Productos de ejemplo para la sección Ventas
-const products = [
-  { id: 'P001', name: 'Camiseta Básica', price: 19.99, purchasePrice: 10.00, stock: 50, debitAccount: '1.1.1.1 - Caja General', creditAccount: '4.5.1.1 - Ventas Nacionales' },
-  { id: 'P002', name: 'Laptop Modelo A', price: 1299.99, purchasePrice: 900.00, stock: 10, debitAccount: '1.1.2.1 - Bancos Nacionales', creditAccount: '4.5.1.1 - Ventas Nacionales' },
-  { id: 'P003', name: 'Mouse Inalámbrico', price: 29.99, purchasePrice: 12.00, stock: 75, debitAccount: '1.1.1.1 - Caja General', creditAccount: '4.5.1.1 - Ventas Nacionales' },
-  { id: 'P004', name: 'Servicio de Consultoría (paquete)', price: 2000.00, purchasePrice: 0.00, stock: 5, debitAccount: '1.1.2.1 - Bancos Nacionales', creditAccount: '4.5.1.1 - Ventas Nacionales' }
-];
+// expose core arrays to window so external modules (backup/import) read live state
+window.transactions = transactions;
+
+// Productos: inicial vacío — los datos de prueba se generan solo con "Ejemplos Masivos"
+const products = [];
+
+// keep products exposed
+window.products = products;
 
 let invoiceItems = [];
+// expose invoiceItems and purchaseItems to window for backup/import compatibility
+window.invoiceItems = invoiceItems;
+
+/* --- Nuevo: Funciones para panel 'Registros de Ventas' en Ventas --- */
+function populateSalesRecordYears() {
+  const sel = document.getElementById('salesRecordYear');
+  if (!sel) return;
+  sel.innerHTML = '';
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  // show last 5 years plus current
+  for (let y = currentYear; y >= currentYear - 5; y--) {
+    sel.add(new Option(String(y), String(y)));
+  }
+  // default to current year
+  sel.value = String(currentYear);
+}
+
+function renderSalesRecords() {
+  const tableBody = document.querySelector('#salesRecordsTable tbody');
+  const summaryEl = document.getElementById('salesRecordsSummary');
+  if (!tableBody || !summaryEl) return;
+  tableBody.innerHTML = '';
+  const yearSel = document.getElementById('salesRecordYear');
+  const monthSel = document.getElementById('salesRecordMonth');
+  const year = yearSel ? yearSel.value : 'all';
+  const month = monthSel ? monthSel.value : 'all';
+
+  // Filter transactions for ventas / credito
+  const sales = (transactions || []).filter(t => {
+    if (!t || (t.type !== 'venta' && t.type !== 'credito')) return false;
+    if (!t.date) return true;
+    if (year && year !== String(new Date(t.date).getFullYear())) return false;
+    if (month && month !== 'all') {
+      const m = String(new Date(t.date).getMonth() + 1).padStart(2, '0');
+      if (m !== month) return false;
+    }
+    return true;
+  }).sort((a,b) => (b.date || '').localeCompare(a.date || ''));
+
+  let total = 0;
+  sales.forEach(s => {
+    const row = tableBody.insertRow();
+    const desc = s.description ? escapeHtml(s.description) : '';
+    row.innerHTML = `
+      <td style="padding:8px;">${s.date || ''}</td>
+      <td style="padding:8px;">${desc}</td>
+      <td style="padding:8px; text-align:right;">$${formatMoney(Number(s.amount || 0))}</td>
+    `;
+    total += Number(s.amount || 0);
+  });
+
+  summaryEl.textContent = `Total: $${formatMoney(total)}`;
+}
+
+/* Export filtered sales records to Excel (uses existing XLSX loaded) */
+function exportSalesRecordsToExcel() {
+  const year = (document.getElementById('salesRecordYear') || {}).value || 'all';
+  const month = (document.getElementById('salesRecordMonth') || {}).value || 'all';
+  const filtered = (transactions || []).filter(t => {
+    if (!t || (t.type !== 'venta' && t.type !== 'credito')) return false;
+    if (year && year !== String(new Date(t.date).getFullYear())) return false;
+    if (month && month !== 'all') {
+      const m = String(new Date(t.date).getMonth() + 1).padStart(2, '0');
+      if (m !== month) return false;
+    }
+    return true;
+  });
+
+  const data = [['Fecha', 'Descripción', 'DEBE', 'HABER', 'Monto']];
+  filtered.forEach(f => {
+    data.push([f.date || '', f.description || '', f.debitAccount || '', f.creditAccount || '', (Number(f.amount) || 0).toFixed(2)]);
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  XLSX.utils.book_append_sheet(wb, ws, 'RegistrosVentas');
+  XLSX.writeFile(wb, `registros_ventas_${year}_${month}.xlsx`);
+}
+
+/* Wire interactions for sales records after DOM ready */
+function initSalesRecords() {
+  // populate year options and initial render if the sales panel exists
+  if (!document.getElementById('salesRecordsPanel')) return;
+  populateSalesRecordYears();
+  // when filters change
+  const ysel = document.getElementById('salesRecordYear');
+  const msel = document.getElementById('salesRecordMonth');
+  const refresh = document.getElementById('refreshSalesRecords');
+  if (ysel) ysel.addEventListener('change', renderSalesRecords);
+  if (msel) msel.addEventListener('change', renderSalesRecords);
+  if (refresh) refresh.addEventListener('click', renderSalesRecords);
+  // initial render
+  renderSalesRecords();
+}
 
 /* Inicializa lista de productos en DOM para ventas y compras */
 function populateProducts() {
@@ -1104,9 +1689,8 @@ function populateProducts() {
     delBtn.title = 'Eliminar producto';
     delBtn.innerHTML = '🗑️';
     delBtn.onclick = () => {
-      if (confirm('¿Eliminar producto "' + p.name + '"?')) {
-        deleteProduct(p.id);
-      }
+      // Use text confirmation modal requiring the user to type ELIMINAR to proceed
+      promptConfirmation(`¿Eliminar producto "${p.name}"? Esta acción no se puede deshacer.`, 'ELIMINAR', () => deleteProduct(p.id));
     };
 
     actionsWrap.appendChild(editBtn);
@@ -1129,6 +1713,9 @@ function populateProducts() {
       returnSel.add(optR);
     }
   });
+
+  // update report widgets (inventory total, catalog counts, company state)
+  try { updateReportPanel(); } catch (e) { /* fail silently if not yet defined */ }
 }
 
 /* Editar producto: cambiar precio de compra/venta y actualizar listado */
@@ -1255,11 +1842,13 @@ function cancelEditProduct() {
 
 function deleteProductFromModal() {
   if (!productBeingEdited) return;
-  if (!confirm('¿Eliminar producto? Esta acción no se puede deshacer.')) return;
-  deleteProduct(productBeingEdited);
-  productBeingEdited = null;
-  document.getElementById('editProductBackdrop').style.display = 'none';
-  document.getElementById('editProductModal').style.display = 'none';
+  // require typed confirmation before deleting from modal
+  promptConfirmation('¿Eliminar producto? Esta acción no se puede deshacer.', 'ELIMINAR', () => {
+    deleteProduct(productBeingEdited);
+    productBeingEdited = null;
+    document.getElementById('editProductBackdrop').style.display = 'none';
+    document.getElementById('editProductModal').style.display = 'none';
+  });
 }
 
 function deleteProduct(productId) {
@@ -1296,27 +1885,106 @@ let purchaseItems = [];
 
 function addNewProduct() {
   const name = document.getElementById('newProductName').value.trim();
+  const cost = parseFloat(document.getElementById('newProductCost').value || '0');
   const price = parseFloat(document.getElementById('newProductPrice').value || '0');
-  if (!name || isNaN(price) || price <= 0) { showNotification('Ingrese nombre y precio válidos para el producto'); return; }
+  if (!name || isNaN(cost) || cost < 0 || isNaN(price) || price <= 0) { showNotification('Ingrese nombre, precio de costo y precio de venta válidos para el producto'); return; }
   const id = 'P' + String(Math.floor(1000 + Math.random() * 9000));
-  const newProd = { id, name, price: parseFloat(price.toFixed(2)), stock: 0, debitAccount: '1.1.6.1 - Inventario de Productos Terminados', creditAccount: '4.5.1.1 - Ventas Nacionales' };
+  const newProd = {
+    id,
+    name,
+    price: parseFloat(price.toFixed(2)),           // precio de venta
+    purchasePrice: parseFloat(cost.toFixed(2)),    // precio de costo almacenado como purchasePrice
+    stock: 0,
+    debitAccount: '1.1.6.1 - Inventario de Productos Terminados',
+    creditAccount: '4.5.1.1 - Ventas Nacionales'
+  };
   products.push(newProd);
   populateProducts();
   saveToLocalStorage();
   showNotification('Producto agregado al inventario (stock 0). Ahora regístrelo en Compras si desea incrementar stock.');
   document.getElementById('newProductName').value = '';
+  document.getElementById('newProductCost').value = '';
   document.getElementById('newProductPrice').value = '';
+}
+
+/* Modal-based initial inventory adder (opened desde Herramientas -> Inventario) */
+function openInventoryModal() {
+  // clear fields
+  document.getElementById('initProductName').value = '';
+  document.getElementById('initProductCost').value = '';
+  document.getElementById('initProductPrice').value = '';
+  document.getElementById('initProductStock').value = '0';
+  document.getElementById('initNameMsg').textContent = '';
+  document.getElementById('initCostMsg').textContent = '';
+  document.getElementById('initPriceMsg').textContent = '';
+  document.getElementById('inventoryBackdrop').style.display = 'block';
+  document.getElementById('inventoryModal').style.display = 'block';
+}
+
+function closeInventoryModal() {
+  document.getElementById('inventoryBackdrop').style.display = 'none';
+  document.getElementById('inventoryModal').style.display = 'none';
+}
+
+function validateInitProductInputs(name, cost, price) {
+  let ok = true;
+  document.getElementById('initNameMsg').textContent = '';
+  document.getElementById('initCostMsg').textContent = '';
+  document.getElementById('initPriceMsg').textContent = '';
+
+  if (!name || !name.trim()) {
+    document.getElementById('initNameMsg').textContent = 'El nombre es obligatorio.';
+    ok = false;
+  }
+  if (isNaN(cost) || cost < 0) {
+    document.getElementById('initCostMsg').textContent = 'Precio de costo inválido.';
+    ok = false;
+  }
+  if (isNaN(price) || price <= 0) {
+    document.getElementById('initPriceMsg').textContent = 'Precio de venta inválido.';
+    ok = false;
+  }
+  return ok;
+}
+
+/* Add product to products array as initial inventory entry */
+function addInitialInventoryProduct() {
+  const name = (document.getElementById('initProductName').value || '').trim();
+  const cost = parseFloat(document.getElementById('initProductCost').value || '0');
+  const price = parseFloat(document.getElementById('initProductPrice').value || '0');
+  const stock = Math.max(0, parseInt(document.getElementById('initProductStock').value || '0', 10));
+
+  if (!validateInitProductInputs(name, cost, price)) return;
+
+  const id = 'P' + String(Math.floor(1000 + Math.random() * 9000));
+  const newProd = {
+    id,
+    name,
+    price: parseFloat(price.toFixed(2)),
+    purchasePrice: parseFloat(cost.toFixed(2)),
+    stock: stock,
+    debitAccount: '1.1.6.1 - Inventario de Productos Terminados',
+    creditAccount: '4.5.1.1 - Ventas Nacionales'
+  };
+  products.push(newProd);
+  populateProducts();
+  saveToLocalStorage();
+  closeInventoryModal();
+  showNotification(`Producto "${newProd.name}" agregado al inventario (stock: ${newProd.stock})`);
 }
 
 function addToPurchase() {
   const prodId = document.getElementById('purchaseProductSelect').value;
   const qty = Math.max(1, parseInt(document.getElementById('purchaseQty').value || '1', 10));
-  const price = parseFloat(document.getElementById('purchasePrice').value || '0');
+  const price = parseFloat(document.getElementById('purchasePrice').value || '0'); // precio de compra
+  const salePrice = parseFloat(document.getElementById('purchaseSalePrice').value || '0'); // precio de venta opcional
   const prod = products.find(p => p.id === prodId);
   if (!prod) { showNotification('Seleccione un producto válido'); return; }
-  if (!price || price <= 0) { showNotification('Ingrese precio unitario válido'); return; }
-  const existing = purchaseItems.find(i => i.id === prodId && i.price === price);
-  if (existing) existing.qty += qty; else purchaseItems.push({ id: prodId, name: prod.name, price: parseFloat(price.toFixed(2)), qty });
+  if (!price || price <= 0) { showNotification('Ingrese precio de compra válido'); return; }
+  // allow grouping by same purchase price and same sale price
+  const existing = purchaseItems.find(i => i.id === prodId && i.price === price && (i.salePrice || 0) === (salePrice || 0));
+  if (existing) existing.qty += qty;
+  else purchaseItems.push({ id: prodId, name: prod.name, price: parseFloat(price.toFixed(2)), salePrice: salePrice > 0 ? parseFloat(salePrice.toFixed(2)) : 0, qty });
   renderPurchase();
 }
 
@@ -1343,13 +2011,21 @@ function processPurchase() {
   const paymentAccount = document.getElementById('purchasePaymentMethod').value || '2.3.1.1 - Proveedores Nacionales';
   let total = 0;
   purchaseItems.forEach(it => total += it.price * it.qty);
-  // Update stock for each product
+  // Update stock for each product and optionally update sale price if provided
   purchaseItems.forEach(it => {
     const prod = products.find(p => p.id === it.id);
     if (prod) {
       prod.stock = (prod.stock || 0) + it.qty;
       // Ensure inventory debit account exists on product
       if (!prod.debitAccount) prod.debitAccount = '1.1.6.1 - Inventario de Productos Terminados';
+      // If purchase included a sale price, update the product's sale price
+      if (it.salePrice && it.salePrice > 0) {
+        prod.price = parseFloat(it.salePrice.toFixed(2));
+      }
+      // If product lacks stored purchasePrice, store current purchase price
+      if (it.price && (!prod.purchasePrice || prod.purchasePrice === 0)) {
+        prod.purchasePrice = parseFloat(it.price.toFixed(2));
+      }
     }
   });
 
@@ -1421,9 +2097,13 @@ function processInvoice() {
   const creditAccount = '4.5.1.1 - Ventas Nacionales';
   const today = new Date().toISOString().split('T')[0];
   const description = 'Factura: ' + invoiceItems.map(i => `${i.qty}x ${i.name}`).join(', ');
+  // include payment type selected in invoice; map crédito -> 'credito' type for existing filters
+  const paymentType = (document.getElementById('invoiceTransactionType') || {}).value || 'contado';
+  const mappedType = paymentType === 'crédito' ? 'credito' : 'venta';
   const transaction = {
     date: today,
-    type: 'venta',
+    type: mappedType,
+    paymentType: paymentType, // preserves selected payment method (contado, crédito, tarjeta, transferencia)
     debitAccount: selectedDebit,
     creditAccount: creditAccount,
     amount: parseFloat(total.toFixed(2)),
@@ -1456,9 +2136,36 @@ function processInvoice() {
 
  // Inicialización
   document.addEventListener('DOMContentLoaded', () => {
+    // Ensure the application starts with no persisted data (fresh zero state).
+    // Remove any previously stored keys used by the app and reset in-memory arrays.
+    try {
+      const keysToRemove = [
+        'accountingTransactions',
+        'accountingProducts',
+        'accountingInvoiceItems',
+        'accountingPurchaseItems',
+        'accountingAccountsCatalog',
+        'accountingCompany'
+      ];
+      keysToRemove.forEach(k => { try { localStorage.removeItem(k); } catch(e){} });
+    } catch (e) {
+      console.warn('Startup storage clear failed', e);
+    }
+
+    // Reset in-memory state explicitly
+    try { transactions = []; window.transactions = transactions; } catch(e){}
+    try { products.length = 0; window.products = products; } catch(e){}
+    try { invoiceItems = []; window.invoiceItems = invoiceItems; } catch(e){}
+    try { purchaseItems = []; window.purchaseItems = purchaseItems; } catch(e){}
+
+    // Populate UI with cleared state
     populateAccountSelects();
     populateProducts();
-    loadFromLocalStorage();
+    updateTransactionsTable();
+    renderCompanyInfo();
+    updateReportPanel();
+
+    // Do not auto-load saved data on startup — data must be restored manually via import or loadFromLocalStorage()
     document.getElementById('transactionForm').addEventListener('submit', handleTransaction);
 
     // Set default date to today in the transaction form
@@ -1479,16 +2186,70 @@ function processInvoice() {
     if (catalogInput) {
       catalogInput.addEventListener('change', importAccountsCatalog);
     }
+
+    // When the purchase product select changes, populate the purchase price and sale price inputs
+    const purchaseSelect = document.getElementById('purchaseProductSelect');
+    if (purchaseSelect) {
+      purchaseSelect.addEventListener('change', populatePurchasePriceFromSelected);
+    }
+
+    // Ensure price fields reflect the current selection after initial population
+    if (document.getElementById('purchaseProductSelect')) {
+      populatePurchasePriceFromSelected();
+    }
+
+    // Ensure sales and purchases record panels are initialized on startup
+    try {
+      if (typeof initSalesRecords === 'function') initSalesRecords();
+    } catch (e) {
+      console.warn('initSalesRecords failed on startup', e);
+    }
+    // Try to render purchases list after other DOMContentLoaded handlers have run (safe delayed call)
+    setTimeout(() => {
+      try {
+        if (typeof renderPurchasesList === 'function') {
+          renderPurchasesList();
+        } else {
+          // Fallback: trigger the refresh control if present
+          const refreshBtn = document.getElementById('refreshPurchasesList');
+          if (refreshBtn) refreshBtn.click();
+        }
+      } catch (e) {
+        console.warn('renderPurchasesList deferred call failed', e);
+      }
+    }, 500);
   });
 
-  // Filter transactions table rows by search text
+  // Filter transactions table rows by search text and by month filter
   function filterTransactions() {
     const q = (document.getElementById('transactionsSearch').value || '').trim().toLowerCase();
+    const monthVal = (document.getElementById('transactionsMonthFilter') || {}).value || 'all';
     const tbody = document.querySelector('#transactionsTable tbody');
     if (!tbody) return;
+
     Array.from(tbody.rows).forEach(row => {
+      // Build searchable text from the row
       const text = Array.from(row.cells).map(c => c.textContent || '').join(' ').toLowerCase();
-      row.style.display = q === '' || text.includes(q) ? '' : 'none';
+
+      // Determine row's date and its month in YYYY-MM format
+      let rowDateText = (row.cells[0] && row.cells[0].textContent) ? row.cells[0].textContent.trim() : '';
+      // Try to parse ISO-like dates (YYYY-MM-DD) or other common formats
+      let matches = rowDateText.match(/(\d{4})-(\d{2})-(\d{2})/);
+      let rowMonth = 'all';
+      if (matches) {
+        rowMonth = `${matches[1]}-${matches[2]}`;
+      } else {
+        // fallback: attempt Date parsing
+        const parsed = new Date(rowDateText);
+        if (!isNaN(parsed)) {
+          rowMonth = `${parsed.getFullYear()}-${String(parsed.getMonth()+1).padStart(2,'0')}`;
+        }
+      }
+
+      const matchesText = q === '' || text.includes(q);
+      const matchesMonth = (monthVal === 'all') || (rowMonth === monthVal);
+
+      row.style.display = (matchesText && matchesMonth) ? '' : 'none';
     });
   }
 
@@ -1528,16 +2289,25 @@ function exportAccountsCatalog() {
       capital: accounts.capital || [],
       resultados: accounts.resultados || []
     };
-    const dataStr = JSON.stringify(catalog, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', 'catalogo_cuentas.json');
-    document.body.appendChild(linkElement);
-    linkElement.click();
-    document.body.removeChild(linkElement);
+    // Use Blob download (more compatible and avoids data URI limits)
+    const serialized = JSON.stringify(catalog, null, 2);
+    const blob = new Blob([serialized], { type: 'application/json;charset=utf-8' });
+    const filename = `catalogo_cuentas_${new Date().toISOString().slice(0,10)}.json`;
+    if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+      window.navigator.msSaveOrOpenBlob(blob, filename);
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => { try { URL.revokeObjectURL(url); } catch(e){} }, 250);
+    }
     showNotification('Catálogo de cuentas descargado');
   } catch (e) {
+    console.error('exportAccountsCatalog failed', e);
     showNotification('Error al descargar catálogo');
   }
 }
@@ -1781,12 +2551,14 @@ function compareAccountsByCode(a, b) {
 
 /* Delete an account from catalog */
 function deleteCatalogAccount(type, index) {
-  if (!confirm('¿Eliminar esta cuenta del catálogo?')) return;
-  if (!accounts[type] || !accounts[type][index]) return;
-  accounts[type].splice(index, 1);
-  populateAccountSelects();
-  renderCatalogView(type);
-  showNotification('Cuenta eliminada del catálogo');
+  // Use typed confirmation to avoid accidental deletions
+  promptConfirmation('¿Eliminar esta cuenta del catálogo? Esta acción no se puede deshacer.', 'ELIMINAR', () => {
+    if (!accounts[type] || !accounts[type][index]) return;
+    accounts[type].splice(index, 1);
+    populateAccountSelects();
+    renderCatalogView(type);
+    showNotification('Cuenta eliminada del catálogo');
+  });
 }
 
 /* Save changes (writes current in-memory accounts to localStorage for persistence) */
@@ -1866,7 +2638,7 @@ function applySuggestedAccounts() {
   setIfExists(creditSelect, s.credit);
 }
 
-// Populate return product select (called when needed)
+ // Populate return product select (called when needed)
 function populateReturnSelect() {
   const returnSel = document.getElementById('returnProductSelect');
   if (!returnSel) return;
@@ -1888,16 +2660,44 @@ function populateReturnSelect() {
   }
 }
 
+/* When a product is chosen in the purchases select, load its stored prices into the compra form inputs.
+   Also callable after populateProducts to sync fields with current selection. */
+function populatePurchasePriceFromSelected() {
+  const sel = document.getElementById('purchaseProductSelect');
+  if (!sel) return;
+  const priceInput = document.getElementById('purchasePrice');
+  const saleInput = document.getElementById('purchaseSalePrice');
+  const selectedId = sel.value;
+  if (!selectedId) {
+    if (priceInput) priceInput.value = '';
+    if (saleInput) saleInput.value = '';
+    return;
+  }
+  const prod = products.find(p => p.id === selectedId);
+  if (!prod) {
+    if (priceInput) priceInput.value = '';
+    if (saleInput) saleInput.value = '';
+    return;
+  }
+  if (priceInput) priceInput.value = (prod.purchasePrice !== undefined && prod.purchasePrice !== null) ? prod.purchasePrice : '';
+  if (saleInput) saleInput.value = (prod.price !== undefined && prod.price !== null) ? prod.price : '';
+}
+
 function showTab(event, tabName) {
   document.querySelectorAll('.content').forEach(content => content.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
   
-  document.getElementById(tabName).classList.add('active');
-  event.target.classList.add('active');
+  const targetContent = document.getElementById(tabName);
+  if (targetContent) targetContent.classList.add('active');
+  if (event && event.target) event.target.classList.add('active');
   
   if (tabName === 'ledger') updateLedger();
   if (tabName === 'majorBook') updateMajorBook();
   if (tabName === 'balance') updateBalance();
+  if (tabName === 'dashboard') {
+    // ensure dashboard charts are updated when opened
+    renderDashboardCharts();
+  }
 }
 
 function handleTransaction(e) {
@@ -2035,9 +2835,33 @@ function editTransaction(index) {
 
 function updateLedger() {
   const tbody = document.querySelector('#ledgerTable tbody');
+  if (!tbody) return;
   tbody.innerHTML = '';
-  
-  transactions.forEach(t => {
+
+  // read selected month filter (format: 'YYYY-MM' or 'all')
+  const monthSel = document.getElementById('ledgerMonthFilter');
+  const monthVal = monthSel ? monthSel.value : 'all';
+
+  // helper to test whether a transaction date is in selected month
+  function inMonth(dateStr, monthVal) {
+    if (!dateStr) return monthVal === 'all';
+    if (monthVal === 'all') return true;
+    const matches = String(dateStr).match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (matches) {
+      return `${matches[1]}-${matches[2]}` === monthVal;
+    }
+    const parsed = new Date(dateStr);
+    if (!isNaN(parsed)) {
+      const ym = `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}`;
+      return ym === monthVal;
+    }
+    return false;
+  }
+
+  // Filter transactions by selected month
+  const filtered = (transactions || []).filter(t => inMonth(t.date, monthVal));
+
+  filtered.forEach(t => {
     // Get account types
     let debitType = '';
     let creditType = '';
@@ -2050,23 +2874,23 @@ function updateLedger() {
 
     // Entrada debe
     const debitRow = tbody.insertRow();
-      debitRow.innerHTML = `
-        <td>${t.date} - ${debitType}</td>
-        <td>${t.description}</td>
-        <td>${t.debitAccount}</td>
-        <td>$${formatMoney(t.amount)}</td>
-        <td></td>
-      `;
+    debitRow.innerHTML = `
+      <td>${t.date} - ${debitType}</td>
+      <td>${t.description}</td>
+      <td>${t.debitAccount}</td>
+      <td>$${formatMoney(t.amount)}</td>
+      <td></td>
+    `;
 
     // Entrada haber
     const creditRow = tbody.insertRow();
-      creditRow.innerHTML = `
-        <td>${t.date} - ${creditType}</td>
-        <td>${t.description}</td>
-        <td>${t.creditAccount}</td>
-        <td></td>
-        <td>$${formatMoney(t.amount)}</td>
-      `;
+    creditRow.innerHTML = `
+      <td>${t.date} - ${creditType}</td>
+      <td>${t.description}</td>
+      <td>${t.creditAccount}</td>
+      <td></td>
+      <td>$${formatMoney(t.amount)}</td>
+    `;
   });
 }
 
@@ -2082,9 +2906,32 @@ function updateMajorBook() {
       };
     }
   });
+
+  // Read selected month filter (format: 'YYYY-MM' or 'all')
+  const monthSel = document.getElementById('majorBookMonthFilter');
+  const monthVal = monthSel ? monthSel.value : 'all';
+
+  // helper to test whether a transaction date is in selected month
+  function inMonth(dateStr, monthVal) {
+    if (!dateStr) return monthVal === 'all';
+    if (monthVal === 'all') return true;
+    const matches = String(dateStr).match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (matches) {
+      return `${matches[1]}-${matches[2]}` === monthVal;
+    }
+    const parsed = new Date(dateStr);
+    if (!isNaN(parsed)) {
+      const ym = `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}`;
+      return ym === monthVal;
+    }
+    return false;
+  }
   
-  // Group transactions by account
+  // Group transactions by account, applying month filter
   transactions.forEach(t => {
+    if (!t) return;
+    if (!inMonth(t.date, monthVal)) return; // skip transactions outside selected month
+
     if (!accountLedgers[t.debitAccount]) return; // Skip if account doesn't exist
     if (!accountLedgers[t.creditAccount]) return; // Skip if account doesn't exist
     
@@ -2145,6 +2992,222 @@ function updateMajorBook() {
   });
 }
 
+/* Nuevo: Análisis de Estado de Resultado Mayor orientado a decisión */
+function analyzeMajorResults() {
+  const panel = document.getElementById('analysisContent');
+  if (!panel) return;
+  panel.innerHTML = '<em>Generando análisis...</em>';
+
+  // Compute balances for resultado accounts
+  const balances = {};
+  transactions.forEach(t => {
+    if (!balances[t.debitAccount]) balances[t.debitAccount] = 0;
+    if (!balances[t.creditAccount]) balances[t.creditAccount] = 0;
+    balances[t.debitAccount] += t.amount;
+    balances[t.creditAccount] -= t.amount;
+  });
+
+  // Aggregate resultado-type accounts
+  const resultadoAccounts = Object.keys(balances).filter(a => accounts.resultados.includes(a));
+  const ingresos = [];
+  const costos = [];
+  const gastos = [];
+
+  resultadoAccounts.forEach(acc => {
+    const bal = balances[acc] || 0;
+    const low = acc.toLowerCase();
+    const entry = { account: acc, amount: bal };
+    if (low.includes('ventas') || low.includes('ingresos')) ingresos.push(entry);
+    else if (low.includes('costo')) costos.push(entry);
+    else gastos.push(entry);
+  });
+
+  // Sort descending by absolute amount for priority
+  const sortDesc = arr => arr.sort((a,b) => Math.abs(b.amount) - Math.abs(a.amount));
+
+  sortDesc(ingresos);
+  sortDesc(costos);
+  sortDesc(gastos);
+
+  const totalIngresos = ingresos.reduce((s, i) => s + i.amount, 0);
+  const totalCostos = costos.reduce((s, c) => s + c.amount, 0);
+  const totalGastos = gastos.reduce((s, g) => s + g.amount, 0);
+  const resultadoNeto = Math.abs(totalIngresos) - Math.abs(totalCostos) - Math.abs(totalGastos);
+
+  // Quick product-level sales summary (for decision support)
+  const salesByProduct = {};
+  transactions.forEach(t => {
+    if (t.type === 'venta' || t.type === 'credito') {
+      // try to extract product names from description "Nx Name" pattern
+      const desc = (t.description || '').toLowerCase();
+      products.forEach(p => {
+        if (desc.includes(p.name.toLowerCase())) {
+          salesByProduct[p.name] = (salesByProduct[p.name] || 0) + t.amount;
+        }
+      });
+    }
+  });
+  const topProducts = Object.entries(salesByProduct).map(([name, amt]) => ({ name, amt })).sort((a,b)=>b.amt-a.amt).slice(0,5);
+
+  // Build recommendations based on simple heuristics
+  const recs = [];
+  if (Math.abs(totalCostos) / (Math.abs(totalIngresos) || 1) > 0.5) {
+    recs.push('Revisar margen bruto: los costos representan más del 50% de las ventas; evalúe proveedores o precios.');
+  }
+  if (Math.abs(totalGastos) / (Math.abs(totalIngresos) || 1) > 0.3) {
+    recs.push('Gastos operativos elevados respecto a ingresos; considere recortar gastos no estratégicos.');
+  }
+  if (resultadoNeto < 0) {
+    recs.push('Resultado neto negativo: priorizar acciones para incrementar ventas o reducir costos/gastos.');
+  }
+  if (topProducts.length && topProducts[0].amt < (Math.abs(totalIngresos) * 0.2)) {
+    recs.push('No hay un producto claro que aporte >20% de ventas; considere campañas para productos con menor rotación.');
+  }
+  if (recs.length === 0) recs.push('No se detectan riesgos inmediatos; mantener seguimiento periódico y comparar con periodos anteriores.');
+
+  // Render HTML
+  let html = `<div style="padding:12px; background:#fff; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.06);">
+    <h4 style="margin-top:0;">Resumen Estado de Resultados (mayor)</h4>
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:200px; padding:10px; border-radius:6px; background:#f7fbff;">
+        <strong>Ingresos</strong>
+        <div style="margin-top:6px; color:#333;">Total Ingresos: <span style="float:right;">$${formatMoney(Math.abs(totalIngresos))}</span></div>
+        ${ingresos.slice(0,5).map(i=>`<div style="color:#555; margin-top:6px;">${i.account} <span style="float:right;">$${formatMoney(Math.abs(i.amount))}</span></div>`).join('')}
+      </div>
+      <div style="flex:1; min-width:200px; padding:10px; border-radius:6px; background:#fff7f7;">
+        <strong>Costos</strong>
+        <div style="margin-top:6px; color:#333;">Total Costos: <span style="float:right;">$${formatMoney(Math.abs(totalCostos))}</span></div>
+        ${costos.slice(0,5).map(i=>`<div style="color:#555; margin-top:6px;">${i.account} <span style="float:right;">$${formatMoney(Math.abs(i.amount))}</span></div>`).join('')}
+      </div>
+      <div style="flex:1; min-width:200px; padding:10px; border-radius:6px; background:#f7fff7;">
+        <strong>Gastos</strong>
+        <div style="margin-top:6px; color:#333;">Total Gastos: <span style="float:right;">$${formatMoney(Math.abs(totalGastos))}</span></div>
+        ${gastos.slice(0,5).map(i=>`<div style="color:#555; margin-top:6px;">${i.account} <span style="float:right;">$${formatMoney(Math.abs(i.amount))}</span></div>`).join('')}
+      </div>
+    </div>
+
+    <div style="margin-top:12px; padding:10px; border-radius:6px; background:#fff;">
+      <strong>Resultado Neto</strong>
+      <div style="margin-top:6px; font-size:1.05em;">$${formatMoney(resultadoNeto)}</div>
+    </div>
+
+    <div style="margin-top:12px; display:flex; gap:12px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:260px; padding:10px; border-radius:6px; background:#f4f6f8;">
+        <strong>Top cuentas por impacto</strong>
+        ${[...ingresos, ...costos, ...gastos].slice(0,8).map(i=>`<div style="margin-top:6px;">${i.account} <span style="float:right;">$${formatMoney(Math.abs(i.amount))}</span></div>`).join('')}
+      </div>
+
+      <div style="flex:1; min-width:260px; padding:10px; border-radius:6px; background:#fafafc;">
+        <strong>Top productos (por ventas registradas)</strong>
+        ${topProducts.length ? topProducts.map(p=>`<div style="margin-top:6px;">${p.name} <span style="float:right;">$${formatMoney(p.amt)}</span></div>`).join('') : '<div style="color:#888; margin-top:6px;">No hay datos de ventas por producto</div>'}
+      </div>
+    </div>
+
+    <div style="margin-top:12px; padding:10px; border-radius:6px; background:#fffbe6;">
+      <strong>Recomendaciones de decisión</strong>
+      <ul style="margin-top:8px;">
+        ${recs.map(r=>`<li style="margin-bottom:6px;">${r}</li>`).join('')}
+      </ul>
+    </div>
+
+    <div style="margin-top:12px; display:flex; gap:8px; justify-content:flex-end;">
+      <button class="btn btn-primary" onclick="analyzeMajorResults()">Actualizar Análisis</button>
+      <button class="btn btn-success" onclick="generateResultsPDF()">Exportar Estado de Resultados (PDF)</button>
+    </div>
+  </div>`;
+
+  panel.innerHTML = html;
+}
+
+/* New: Analizar Balance — cálculo de indicadores y recomendaciones para la toma de decisiones */
+function analyzeBalance() {
+  // Ensure balance numbers are current
+  const balances = {};
+  transactions.forEach(t => {
+    if (!balances[t.debitAccount]) balances[t.debitAccount] = 0;
+    if (!balances[t.creditAccount]) balances[t.creditAccount] = 0;
+    balances[t.debitAccount] += t.amount;
+    balances[t.creditAccount] -= t.amount;
+  });
+
+  // Aggregate totals by group
+  let totalActivos = 0;
+  let totalPasivos = 0;
+  let totalCapital = 0;
+
+  Object.entries(balances).forEach(([account, balance]) => {
+    if (balance === 0) return;
+    if (accounts.activo.includes(account)) totalActivos += balance;
+    if (accounts.pasivo.includes(account)) totalPasivos += Math.abs(balance);
+    if (accounts.capital.includes(account)) totalCapital += Math.abs(balance);
+    if (accounts.resultados.includes(account)) {
+      // resultado accounts affect capital: treat Ventas as positive, others negative
+      if (account.toLowerCase().includes('ventas')) totalCapital += Math.abs(balance);
+      else totalCapital -= Math.abs(balance);
+    }
+  });
+
+  // Basic indicators
+  const liquidity = totalPasivos === 0 ? Infinity : (totalActivos / totalPasivos);
+  const debtToEquity = totalCapital === 0 ? Infinity : (totalPasivos / totalCapital);
+
+  // Heuristics for recommendations
+  const recs = [];
+  if (liquidity < 1) recs.push('Liquidez baja: los activos circulantes no cubren pasivos; mejorar caja o financiamiento a corto plazo.');
+  else if (liquidity < 1.5) recs.push('Liquidez moderada: vigilar vencimientos y mejorar ciclo de cobros.');
+  else recs.push('Liquidez adecuada en el corto plazo.');
+
+  if (debtToEquity > 2) recs.push('Apalancamiento alto: la empresa tiene más deuda relativa al capital; evaluar reducción de pasivos o recapitalización.');
+  else recs.push('Apalancamiento dentro de rangos razonables.');
+
+  // Prepare concise panel output
+  const panel = document.getElementById('analysisContent');
+  if (panel) {
+    panel.innerHTML = `<div style="padding:12px; background:#fff; border-radius:8px; box-shadow:0 2px 6px rgba(0,0,0,0.06);">
+      <h4 style="margin-top:0;">Análisis del Balance</h4>
+      <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <div style="flex:1; min-width:180px; padding:10px; border-radius:6px; background:#f7fbff;">
+          <strong>Activos</strong>
+          <div style="margin-top:6px;">Total Activos: <span style="float:right;">$${formatMoney(Math.abs(totalActivos))}</span></div>
+        </div>
+        <div style="flex:1; min-width:180px; padding:10px; border-radius:6px; background:#fff7f7;">
+          <strong>Pasivos</strong>
+          <div style="margin-top:6px;">Total Pasivos: <span style="float:right;">$${formatMoney(Math.abs(totalPasivos))}</span></div>
+        </div>
+        <div style="flex:1; min-width:180px; padding:10px; border-radius:6px; background:#f7fff7;">
+          <strong>Capital</strong>
+          <div style="margin-top:6px;">Total Capital: <span style="float:right;">$${formatMoney(Math.abs(totalCapital))}</span></div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px; padding:10px; border-radius:6px; background:#fff;">
+        <strong>Indicadores clave</strong>
+        <div style="margin-top:6px;">Razón de Liquidez (Activos / Pasivos): <span style="float:right;">${isFinite(liquidity) ? liquidity.toFixed(2) : '∞'}</span></div>
+        <div style="margin-top:6px;">Deuda / Capital: <span style="float:right;">${isFinite(debtToEquity) ? debtToEquity.toFixed(2) : '∞'}</span></div>
+      </div>
+
+      <div style="margin-top:12px; padding:10px; border-radius:6px; background:#fffbe6;">
+        <strong>Recomendaciones</strong>
+        <ul style="margin-top:8px;">
+          ${recs.map(r=>`<li style="margin-bottom:6px;">${r}</li>`).join('')}
+        </ul>
+      </div>
+
+      <div style="margin-top:12px; display:flex; gap:8px; justify-content:flex-end;">
+        <button class="btn btn-primary" onclick="analyzeBalance()">Actualizar Análisis</button>
+        <button class="btn btn-success" onclick="generateBalancePDF()">Exportar Balance (PDF)</button>
+      </div>
+    </div>`;
+  }
+
+  // Also refresh balance view so numbers match analysis
+  updateBalance();
+
+  // Notify user succinctly
+  showNotification('Análisis de balance completado', 3000);
+}
+
+/* Original updateBalance function follows unchanged */
 function updateBalance() {
   const balances = {};
   
@@ -2214,8 +3277,25 @@ function updateBalance() {
 }
 
 function saveToLocalStorage() {
-  localStorage.setItem('accountingTransactions', JSON.stringify(transactions));
-  localStorage.setItem('accountingProducts', JSON.stringify(products));
+  try {
+    // ensure global window references are kept in sync for modules that read window.* directly (backupJSON, security wrappers, etc.)
+    try {
+      window.transactions = transactions;
+      window.products = products;
+      window.invoiceItems = typeof invoiceItems !== 'undefined' ? invoiceItems : (window.invoiceItems || []);
+      window.purchaseItems = typeof purchaseItems !== 'undefined' ? purchaseItems : (window.purchaseItems || []);
+    } catch (syncErr) {
+      console.warn('sync to window failed', syncErr);
+    }
+
+    localStorage.setItem('accountingTransactions', JSON.stringify(transactions));
+    localStorage.setItem('accountingProducts', JSON.stringify(products));
+    // also persist invoice and purchase temp lists for a full backup/import
+    try { localStorage.setItem('accountingInvoiceItems', JSON.stringify(window.invoiceItems || [])); } catch(e){ console.warn(e); }
+    try { localStorage.setItem('accountingPurchaseItems', JSON.stringify(window.purchaseItems || [])); } catch(e){ console.warn(e); }
+  } catch (e) {
+    console.warn('saveToLocalStorage failed', e);
+  }
 }
 
 // Company info persistence
@@ -2313,6 +3393,213 @@ function saveCompany() {
   showNotification('Información de la empresa guardada');
 }
 
+/* Export company data to JSON and trigger download */
+function exportCompanyData() {
+  try {
+    const company = loadCompanyFromLocalStorage();
+    if (!company) { showNotification('No hay datos de empresa para descargar'); return; }
+    const payload = {
+      meta: {
+        exportedAt: new Date().toISOString(),
+        source: 'Empresa - Sistema Contable'
+      },
+      company
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+    // include time in filename for uniqueness: YYYYMMDD-HHMMSS
+    const now = new Date();
+    const pad = v => String(v).padStart(2, '0');
+    const fecha = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}`;
+    const hora = `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    const fileName = `empresa_${(company.name || 'data').replace(/\s+/g,'_').slice(0,30)}_${fecha}-${hora}.json`;
+    if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+      window.navigator.msSaveOrOpenBlob(blob, fileName);
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => { try { URL.revokeObjectURL(url); } catch(e){} }, 250);
+    }
+    showNotification('Datos de la empresa descargados');
+  } catch (e) {
+    console.error('exportCompanyData failed', e);
+    showNotification('Error al descargar datos de la empresa');
+  }
+}
+
+/* Trigger hidden file input to import company JSON */
+function triggerCompanyImport() {
+  const inp = document.getElementById('companyJsonInput');
+  if (!inp) return;
+  inp.value = '';
+  inp.click();
+}
+
+/* Handle file input change for company import */
+document.getElementById('companyJsonInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    try {
+      const parsed = JSON.parse(evt.target.result);
+      // Accept either a direct company object or wrapped payload.meta + company
+      const company = parsed && parsed.company ? parsed.company : parsed;
+      if (!company || typeof company !== 'object' || !company.name) {
+        showNotification('Archivo inválido: no contiene datos de empresa');
+        return;
+      }
+      // basic mapping and validation
+      const mapped = {
+        name: company.name || '',
+        responsible: company.responsible || company.responsable || '',
+        email: company.email || '',
+        activity: company.activity || company.giro || '',
+        phone: company.phone || company.telefono || '',
+        registry: company.registry || company.registro || '',
+        nit: company.nit || ''
+      };
+      // validate required fields minimally
+      if (!mapped.name || !mapped.responsible || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mapped.email || '')) {
+        showNotification('Datos importados incompletos o inválidos');
+        return;
+      }
+      saveCompanyToLocalStorage(mapped);
+      renderCompanyInfo();
+      showNotification('Datos de la empresa importados correctamente');
+    } catch (err) {
+      console.error('Company import failed', err);
+      showNotification('Error al importar datos de la empresa');
+    } finally {
+      // always clear the input so the same file can be selected again and avoid stale File object
+      try { e.target.value = ''; } catch (ignore) {}
+    }
+  };
+  reader.readAsText(file);
+});
+
+/* Inventory import/export and view handlers */
+function exportInventoryJSON() {
+  try {
+    // Use the in-scope products array (preferred) and fallback to window.products only if needed
+    const sourceProducts = Array.isArray(products) ? products : (Array.isArray(window.products) ? window.products : []);
+    const normalized = sourceProducts.map(p => ({
+      id: p && p.id ? p.id : ('P' + Math.floor(1000 + Math.random() * 9000)),
+      name: p && p.name ? p.name : '',
+      price: Number((p && (p.price !== undefined ? p.price : p.purchasePrice)) || 0),
+      purchasePrice: Number((p && (p.purchasePrice !== undefined ? p.purchasePrice : p.price)) || 0),
+      stock: Number((p && p.stock) || 0),
+      debitAccount: p && p.debitAccount ? p.debitAccount : '',
+      creditAccount: p && p.creditAccount ? p.creditAccount : ''
+    }));
+
+    const data = {
+      exportedAt: new Date().toISOString(),
+      products: normalized
+    };
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' });
+    const filename = `inventario_${new Date().toISOString().slice(0,10)}.json`;
+
+    // Use object URL and revoke after a brief timeout to maximize compatibility
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    // append to DOM to make click() reliable on some browsers
+    document.body.appendChild(a);
+    a.click();
+
+    // remove element and revoke object URL after a tick to ensure download starts
+    setTimeout(() => {
+      try { a.remove(); } catch (e) {}
+      try { URL.revokeObjectURL(url); } catch (e) {}
+    }, 200);
+
+    showNotification('Inventario descargado en JSON');
+  } catch (e) {
+    console.error('exportInventoryJSON failed', e);
+    showNotification('Error al descargar inventario');
+  }
+}
+
+function triggerInventoryImport() {
+  const inp = document.getElementById('inventoryJsonInput');
+  if (!inp) return;
+  inp.value = '';
+  inp.click();
+}
+
+document.getElementById('inventoryJsonInput').addEventListener('change', function(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    try {
+      const parsed = JSON.parse(evt.target.result);
+      const loaded = parsed && parsed.products ? parsed.products : (Array.isArray(parsed) ? parsed : null);
+      if (!Array.isArray(loaded)) {
+        showNotification('Archivo inválido: no contiene arreglo de productos');
+        return;
+      }
+      // Replace current products with imported ones (basic validation)
+      products.length = 0;
+      loaded.forEach(p => {
+        if (!p || typeof p !== 'object') return;
+        products.push({
+          id: p.id || ('P' + Math.floor(1000 + Math.random()*9000)),
+          name: p.name || '',
+          price: Number(p.price || 0),
+          purchasePrice: Number(p.purchasePrice || 0),
+          stock: Number(p.stock || 0),
+          debitAccount: p.debitAccount || '1.1.6.1 - Inventario de Productos Terminados',
+          creditAccount: p.creditAccount || '4.5.1.1 - Ventas Nacionales'
+        });
+      });
+      populateProducts();
+      saveToLocalStorage();
+      showNotification('Inventario importado correctamente');
+    } catch (err) {
+      console.error('inventory import failed', err);
+      showNotification('Error al importar inventario');
+    } finally {
+      try { document.getElementById('inventoryJsonInput').value = ''; } catch(e){}
+    }
+  };
+  reader.readAsText(file);
+});
+
+/* Inventory view modal controls */
+function openInventoryView() {
+  const bd = document.getElementById('inventoryViewBackdrop');
+  const md = document.getElementById('inventoryViewModal');
+  const body = document.getElementById('inventoryViewBody');
+  if (!body) return;
+  body.innerHTML = '';
+  (products || []).forEach(p => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td style="padding:8px; border-bottom:1px solid #f1f1f1;">${escapeHtml(p.id)}</td>
+                    <td style="padding:8px; border-bottom:1px solid #f1f1f1;">${escapeHtml(p.name)}</td>
+                    <td style="padding:8px; border-bottom:1px solid #f1f1f1; text-align:right;">${Number(p.stock||0)}</td>
+                    <td style="padding:8px; border-bottom:1px solid #f1f1f1; text-align:right;">$${formatMoney(Number(p.price||0))}</td>
+                    <td style="padding:8px; border-bottom:1px solid #f1f1f1; text-align:right;">$${formatMoney(Number(p.purchasePrice||0))}</td>`;
+    body.appendChild(tr);
+  });
+  if (bd) bd.style.display = 'block';
+  if (md) md.style.display = 'block';
+}
+
+function closeInventoryView() {
+  const bd = document.getElementById('inventoryViewBackdrop');
+  const md = document.getElementById('inventoryViewModal');
+  if (md) md.style.display = 'none';
+  if (bd) bd.style.display = 'none';
+}
+
 function renderCompanyInfo() {
   const container = document.getElementById('companyInfo');
   const c = loadCompanyFromLocalStorage();
@@ -2375,16 +3662,261 @@ function saveData() {
   showNotification('Datos guardados exitosamente');
 }
 
-function exportToJSON() {
-  const dataStr = JSON.stringify(transactions, null, 2);
-  const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-  
-  const exportFileDefaultName = 'transactions.json';
-  
-  const linkElement = document.createElement('a');
-  linkElement.setAttribute('href', dataUri);
-  linkElement.setAttribute('download', exportFileDefaultName);
-  linkElement.click();
+/* New: backupJSON - produce a structured, complete backup of current app state and downloads it as JSON.
+   The function collects the freshest in-memory state (transactions, products, transient lists, catalog,
+   company, metadata and a small integrity checklist), serializes it deterministically and triggers download. */
+function backupJSON() {
+  try {
+    // Best-effort: attempt an immediate in-memory save request (debounced savers may not finish),
+    // then directly gather from live in-memory structures to ensure freshest state is exported.
+    try {
+      if (typeof window.saveToLocalStorage === 'function') {
+        window.saveToLocalStorage();
+      }
+    } catch (e) {
+      // ignore wrapper availability
+    }
+
+    // helper to safely read arrays from either local scope or window
+    const readArray = (key, fallback) => {
+      try {
+        const v = (window && window[key]) || fallback;
+        return Array.isArray(v) ? v : (Array.isArray(fallback) ? fallback : []);
+      } catch (e) {
+        return Array.isArray(fallback) ? fallback : [];
+      }
+    };
+
+    const now = new Date();
+    const nowIso = now.toISOString();
+
+    // Build export object from live in-memory data (transactions/products may exist either as globals or local vars)
+    const txs = readArray('transactions', typeof transactions !== 'undefined' ? transactions : []);
+    const prods = readArray('products', typeof products !== 'undefined' ? products : []);
+    const invItems = readArray('invoiceItems', typeof invoiceItems !== 'undefined' ? invoiceItems : []);
+    const purItems = readArray('purchaseItems', typeof purchaseItems !== 'undefined' ? purchaseItems : []);
+
+    const exportObj = {
+      meta: {
+        generatedAt: nowIso,
+        appVersion: 'v5.9',
+        source: location.href,
+        generator: 'Sistema Contable - Respaldo JSON',
+        notes: 'Este archivo contiene un respaldo completo del estado actual de la aplicación. Mantener en lugar seguro.'
+      },
+      integrity: {
+        transactionsCount: txs.length,
+        productsCount: prods.length,
+        invoiceItemsCount: invItems.length,
+        purchaseItemsCount: purItems.length,
+        accountsCatalog: {
+          activo: Array.isArray(accounts.activo) ? accounts.activo.length : 0,
+          pasivo: Array.isArray(accounts.pasivo) ? accounts.pasivo.length : 0,
+          capital: Array.isArray(accounts.capital) ? accounts.capital.length : 0,
+          resultados: Array.isArray(accounts.resultados) ? accounts.resultados.length : 0
+        },
+        companySaved: !!loadCompanyFromLocalStorage()
+      },
+      data: {
+        // Deep-clone and normalize to prevent leaking references and to enforce expected shapes
+        transactions: txs.map(t => (t && typeof t === 'object') ? {
+          date: t.date || '',
+          type: t.type || '',
+          paymentType: t.paymentType || '',
+          debitAccount: t.debitAccount || '',
+          creditAccount: t.creditAccount || '',
+          amount: Number(t.amount || 0),
+          description: t.description || '',
+          debitCode: t.debitCode || (t.debitAccount ? String(t.debitAccount).split(' - ')[0] : ''),
+          creditCode: t.creditCode || (t.creditAccount ? String(t.creditAccount).split(' - ')[0] : '')
+        } : null).filter(Boolean),
+        products: prods.map(p => (p && typeof p === 'object') ? {
+          id: p.id || '',
+          name: p.name || '',
+          price: Number(p.price || 0),
+          purchasePrice: Number(p.purchasePrice || 0),
+          stock: Number(p.stock || 0),
+          debitAccount: p.debitAccount || '',
+          creditAccount: p.creditAccount || ''
+        } : null).filter(Boolean),
+        invoiceItems: invItems.map(i => (i && typeof i === 'object') ? {
+          id: i.id || '',
+          name: i.name || '',
+          qty: Number(i.qty || 0),
+          price: Number(i.price || 0)
+        } : null).filter(Boolean),
+        purchaseItems: purItems.map(i => (i && typeof i === 'object') ? {
+          id: i.id || '',
+          name: i.name || '',
+          qty: Number(i.qty || 0),
+          price: Number(i.price || 0),
+          salePrice: Number(i.salePrice || 0)
+        } : null).filter(Boolean),
+        accounts: {
+          activo: Array.isArray(accounts.activo) ? accounts.activo.slice() : [],
+          pasivo: Array.isArray(accounts.pasivo) ? accounts.pasivo.slice() : [],
+          capital: Array.isArray(accounts.capital) ? accounts.capital.slice() : [],
+          resultados: Array.isArray(accounts.resultados) ? accounts.resultados.slice() : []
+        },
+        company: loadCompanyFromLocalStorage() || {}
+      }
+    };
+
+    exportObj.summary = {
+      generatedAt: exportObj.meta.generatedAt,
+      transactions: exportObj.integrity.transactionsCount,
+      products: exportObj.integrity.productsCount,
+      accountsTotal:
+        (exportObj.integrity.accountsCatalog.activo || 0) +
+        (exportObj.integrity.accountsCatalog.pasivo || 0) +
+        (exportObj.integrity.accountsCatalog.capital || 0) +
+        (exportObj.integrity.accountsCatalog.resultados || 0)
+    };
+
+    const serialized = JSON.stringify(exportObj, null, 2);
+    const blob = new Blob([serialized], { type: 'application/json;charset=utf-8' });
+
+    // Filename format: "Respaldo SistCont-"+fecha+"-"+hora
+    // fecha = YYYYMMDD, hora = HHMMSS
+    const pad = v => String(v).padStart(2, '0');
+    const fecha = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}`;
+    const hora = `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    const fileName = `Respaldo SistCont-${fecha}-${hora}.json`;
+
+    if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+      window.navigator.msSaveOrOpenBlob(blob, fileName);
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      // revoke after a short delay to ensure download started
+      setTimeout(() => { try { URL.revokeObjectURL(url); } catch(e){} }, 250);
+    }
+
+    showNotification(`Respaldo generado: ${fileName}`, 4500);
+  } catch (err) {
+    console.error('backupJSON failed', err);
+    showNotification('Error al generar el respaldo JSON');
+  }
+}
+
+// Keep compatibility aliases for older calls
+function exportToJSON() { backupJSON(); }
+
+// Backward-compatible Spanish-named function required by UI button
+// The application had a button calling respaldoDatos() which didn't exist.
+// Provide a global function that calls the existing backupJSON implementation.
+function respaldoDatos() { 
+  try {
+    // call primary backup routine
+    backupJSON();
+  } catch (e) {
+    console.error('respaldoDatos wrapper failed', e);
+    // fallback: try exportToJSON if backupJSON is unavailable for some reason
+    try { exportToJSON(); } catch (e2) { console.error('fallback exportToJSON failed', e2); }
+  }
+}
+
+/* Delete all application data: perform a full reset (memory, localStorage, caches, service workers) and reload the app */
+function deleteAllData() {
+  // Mark mode so confirm handlers know this was a full clear request
+  window._clearConfirmationMode = 'allData';
+
+  // Use typed confirmation modal to require the user to explicitly confirm the destructive action.
+  promptConfirmation('¿Desea reiniciar completamente la aplicación? Esto eliminará todos los datos y recargará la aplicación.', 'REINICIAR', () => {
+    try {
+      // 1) Clear in-memory data
+      try { transactions = []; window.transactions = transactions; } catch(e){}
+      try { products.length = 0; window.products = products; } catch(e){}
+      try { invoiceItems = []; window.invoiceItems = invoiceItems; } catch(e){}
+      try { purchaseItems = []; window.purchaseItems = purchaseItems; } catch(e){}
+
+      // 2) Remove well-known app keys from localStorage
+      const keys = [
+        'accountingTransactions',
+        'accountingProducts',
+        'accountingInvoiceItems',
+        'accountingPurchaseItems',
+        'accountingAccountsCatalog',
+        'accountingCompany'
+      ];
+      try {
+        keys.forEach(k => { try { localStorage.removeItem(k); } catch(e){}; });
+      } catch(e) {}
+
+      // 3) Remove any other keys that look app-related (prefix accounting)
+      try {
+        Object.keys(localStorage).forEach(k => {
+          if (k && k.toLowerCase().startsWith('accounting')) {
+            try { localStorage.removeItem(k); } catch(e){}
+          }
+        });
+      } catch(e){}
+
+      // 4) Clear the Cache Storage (if present) to avoid cached JSON/files lingering
+      try {
+        if (window.caches && typeof window.caches.keys === 'function') {
+          caches.keys().then(names => {
+            return Promise.all(names.map(n => caches.delete(n)));
+          }).catch(err => console.warn('Cache deletion failed', err));
+        }
+      } catch (e) { console.warn('cache cleanup error', e); }
+
+      // 5) Unregister service workers (if any) to avoid background caching reintroducing data
+      try {
+        if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+          navigator.serviceWorker.getRegistrations().then(regs => {
+            regs.forEach(r => {
+              try { r.unregister(); } catch(e){ console.warn('sw unregister failed', e); }
+            });
+          }).catch(err => console.warn('getRegistrations failed', err));
+        }
+      } catch(e){ console.warn('service worker cleanup failed', e); }
+
+      // 6) Ensure UI is reset immediately (synchronous), hide confirmation modals/backdrops
+      try { document.getElementById('clearConfirmationModal').style.display = 'none'; } catch(e){}
+      try { document.getElementById('clearConfirmationBackdrop').style.display = 'none'; } catch(e){}
+      try { document.getElementById('confirmationModal').style.display = 'none'; } catch(e){}
+      try { document.getElementById('confirmationBackdrop').style.display = 'none'; } catch(e){}
+
+      // 7) Refresh UI elements to empty state before reload (best-effort)
+      try { updateTransactionsTable(); } catch(e){}
+      try { populateProducts(); } catch(e){}
+      try { renderCompanyInfo(); } catch(e){}
+      try { updateLedger(); updateMajorBook(); updateBalance(); } catch(e){}
+
+      // 8) Persist removal by performing one final direct localStorage clear of any remaining keys
+      try {
+        Object.keys(localStorage).forEach(k => {
+          if (k && (k.toLowerCase().startsWith('accounting') || k.toLowerCase().includes('sistema') || k.toLowerCase().includes('contable'))) {
+            try { localStorage.removeItem(k); } catch(e){}
+          }
+        });
+      } catch(e){}
+
+      // Provide immediate feedback and then reload the page to ensure no cached state remains in memory
+      try { showNotification('La aplicación se reiniciará ahora y quedará en estado inicial', 1600); } catch(e){}
+      // Delay slightly so the user sees notification, then reload to guarantee a fresh start
+      setTimeout(() => {
+        try {
+          // Hard reload bypassing HTTP cache
+          location.reload(true);
+        } catch (e) {
+          // fallback to normal reload
+          location.reload();
+        }
+      }, 1400);
+
+    } catch (err) {
+      console.error('deleteAllData full reset failed', err);
+      showNotification('No se pudo completar el reinicio completo; revise la consola.');
+      window._clearConfirmationMode = null;
+    }
+  });
 }
 
 function importJSON() {
@@ -2392,20 +3924,124 @@ function importJSON() {
 }
 
 document.getElementById('jsonInput').addEventListener('change', function(e) {
-  const file = e.target.files[0];
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
   const reader = new FileReader();
-  
-  reader.onload = function(e) {
+
+  reader.onload = function(evt) {
     try {
-      transactions = JSON.parse(e.target.result);
-      updateTransactionsTable();
-      saveToLocalStorage();
-      showNotification('Datos importados exitosamente');
+      const parsed = JSON.parse(evt.target.result);
+
+      // Support two formats:
+      // 1) Simple: an array of transactions (legacy)
+      // 2) Backup object produced by backupJSON: { meta, integrity, data: { transactions, products, accounts, company }, ...}
+      let loadedTx = [];
+      let loadedProducts = [];
+      let loadedAccounts = null;
+      let loadedCompany = null;
+
+      if (Array.isArray(parsed)) {
+        // simple transactions array
+        loadedTx = parsed;
+      } else if (parsed && typeof parsed === 'object') {
+        // prefer structured payload
+        if (parsed.data && typeof parsed.data === 'object') {
+          const d = parsed.data;
+          if (Array.isArray(d.transactions)) loadedTx = d.transactions;
+          if (Array.isArray(d.products)) loadedProducts = d.products;
+          if (d.accounts && typeof d.accounts === 'object') loadedAccounts = d.accounts;
+          if (d.company && typeof d.company === 'object') loadedCompany = d.company;
+        } else {
+          // fallback: if object contains transactions key directly
+          if (Array.isArray(parsed.transactions)) loadedTx = parsed.transactions;
+          if (Array.isArray(parsed.products)) loadedProducts = parsed.products;
+          if (parsed.accounts && typeof parsed.accounts === 'object') loadedAccounts = parsed.accounts;
+          if (parsed.company && typeof parsed.company === 'object') loadedCompany = parsed.company;
+        }
+      }
+
+      // Normalize and assign transactions
+      if (Array.isArray(loadedTx)) {
+        transactions = loadedTx.map(t => t && typeof t === 'object' ? {
+          date: t.date || '',
+          type: t.type || '',
+          paymentType: t.paymentType || '',
+          debitAccount: t.debitAccount || '',
+          creditAccount: t.creditAccount || '',
+          amount: Number(t.amount || 0),
+          description: t.description || '',
+          debitCode: t.debitCode || (t.debitAccount ? String(t.debitAccount).split(' - ')[0] : ''),
+          creditCode: t.creditCode || (t.creditAccount ? String(t.creditAccount).split(' - ')[0] : '')
+        } : null).filter(Boolean);
+      }
+
+      // Normalize and assign products
+      if (Array.isArray(loadedProducts) && loadedProducts.length) {
+        products.length = 0;
+        loadedProducts.forEach(p => {
+          if (!p || typeof p !== 'object') return;
+          products.push({
+            id: p.id || ('P' + Math.floor(1000 + Math.random()*9000)),
+            name: p.name || '',
+            price: Number(p.price || 0),
+            purchasePrice: Number(p.purchasePrice || 0),
+            stock: Number(p.stock || 0),
+            debitAccount: p.debitAccount || '',
+            creditAccount: p.creditAccount || ''
+          });
+        });
+      }
+
+      // Replace accounts if provided in backup
+      if (loadedAccounts && typeof loadedAccounts === 'object') {
+        accounts.activo = Array.isArray(loadedAccounts.activo) ? loadedAccounts.activo.slice() : [];
+        accounts.pasivo = Array.isArray(loadedAccounts.pasivo) ? loadedAccounts.pasivo.slice() : [];
+        accounts.capital = Array.isArray(loadedAccounts.capital) ? loadedAccounts.capital.slice() : [];
+        accounts.resultados = Array.isArray(loadedAccounts.resultados) ? loadedAccounts.resultados.slice() : [];
+      }
+
+      // Save company data if provided
+      if (loadedCompany && typeof loadedCompany === 'object' && loadedCompany.name) {
+        try {
+          saveCompanyToLocalStorage({
+            name: loadedCompany.name || '',
+            responsible: loadedCompany.responsible || loadedCompany.responsable || '',
+            email: loadedCompany.email || '',
+            activity: loadedCompany.activity || loadedCompany.giro || '',
+            phone: loadedCompany.phone || loadedCompany.telefono || '',
+            registry: loadedCompany.registry || loadedCompany.registro || '',
+            nit: loadedCompany.nit || ''
+          });
+        } catch (err) {
+          console.warn('company save failed during import', err);
+        }
+      }
+
+      // Refresh UI and persist
+      try {
+        updateTransactionsTable();
+        populateProducts();
+        populateAccountSelects();
+        renderCompanyInfo();
+        updateLedger();
+        updateMajorBook();
+        updateBalance();
+        // persist to storage (will be debounced by app_security)
+        try { saveToLocalStorage(); } catch(e){ console.warn('saveToLocalStorage missing', e); }
+      } catch (uiErr) {
+        console.warn('UI refresh after import failed', uiErr);
+      }
+
+      showNotification('Importación JSON completada');
     } catch (error) {
+      console.error('Import JSON failed', error);
       showNotification('Error al importar el archivo JSON');
+    } finally {
+      // clear the input so same file can be selected again if needed
+      try { document.getElementById('jsonInput').value = ''; } catch(e){}
     }
   };
-  
+
   reader.readAsText(file);
 });
 
@@ -2527,14 +4163,49 @@ function exportToExcel() {
   balanceData.push(['Totales', 'Total Capital', Math.abs(totalCapital).toFixed(2)]);
   balanceData.push(['Totales', 'Total Pasivo + Capital', (Math.abs(totalPasivos) + Math.abs(totalCapital)).toFixed(2)]);
 
+  // Generate Estado de Resultados data (Resumen por cuentas de resultados)
+  const resultadosData = [['Cuenta', 'Monto']];
+  let totalIngresos = 0;
+  let totalCostos = 0;
+  let totalGastos = 0;
+
+  Object.entries(balances).forEach(([account, balance]) => {
+    if (balance === 0) return;
+    if (accounts.resultados.includes(account)) {
+      // classify roughly by keywords: Ventas => ingresos, Costo => costo, Gastos/Otros => gastos
+      const lower = account.toLowerCase();
+      if (lower.includes('ventas') || lower.includes('ingresos') ) {
+        resultadosData.push([account, Math.abs(balance).toFixed(2)]);
+        totalIngresos += balance;
+      } else if (lower.includes('costo') || lower.includes('costo de ventas')) {
+        resultadosData.push([account, Math.abs(balance).toFixed(2)]);
+        totalCostos += balance;
+      } else {
+        // treat as gasto/otros
+        resultadosData.push([account, Math.abs(balance).toFixed(2)]);
+        totalGastos += balance;
+      }
+    }
+  });
+
+  // Calculate resultado neto (Ingresos - Costos - Gastos)
+  const netResult = (Math.abs(totalIngresos) - Math.abs(totalCostos) - Math.abs(totalGastos));
+  resultadosData.push([]);
+  resultadosData.push(['Total Ingresos', Math.abs(totalIngresos).toFixed(2)]);
+  resultadosData.push(['Total Costos', Math.abs(totalCostos).toFixed(2)]);
+  resultadosData.push(['Total Gastos', Math.abs(totalGastos).toFixed(2)]);
+  resultadosData.push(['Resultado Neto', netResult.toFixed(2)]);
+
   // Create worksheets
   const wsDiario = XLSX.utils.aoa_to_sheet(diarioData);
   const wsMayor = XLSX.utils.aoa_to_sheet(mayorData);
   const wsBalance = XLSX.utils.aoa_to_sheet(balanceData);
+  const wsResultados = XLSX.utils.aoa_to_sheet(resultadosData);
 
   // Add worksheets to workbook
   XLSX.utils.book_append_sheet(wb, wsDiario, "Libro Diario");
   XLSX.utils.book_append_sheet(wb, wsMayor, "Libro Mayor");
+  XLSX.utils.book_append_sheet(wb, wsResultados, "Estado de Resultados");
   XLSX.utils.book_append_sheet(wb, wsBalance, "Balance General");
 
   // Save workbook
@@ -2619,85 +4290,119 @@ function hideDeleteConfirmation() {
 }
 
 function addExampleTransactions() {
-  const today = new Date().toISOString().split('T')[0];
-  
-  const exampleTransactions = [
-    {
-      date: today,
-      type: 'venta',
-      debitAccount: '1.1.1.1 - Caja General',
-      creditAccount: '4.5.1.1 - Ventas Nacionales',
-      amount: 5000,
-      description: 'Venta de mercancía en efectivo',
-      debitCode: '1.1.1.1',
-      creditCode: '4.5.1.1'
-    },
-    {
-      date: today,
-      type: 'compra',
-      debitAccount: '1.2.3.2 - Equipo de Cómputo',
-      creditAccount: '2.3.1.1 - Proveedores Nacionales',
-      amount: 15000,
-      description: 'Compra de equipo de cómputo a crédito',
-      debitCode: '1.2.3.2',
-      creditCode: '2.3.1.1'
-    },
-    {
-      date: today,
-      type: 'gasto',
-      debitAccount: '6.7.2.4 - Luz, Agua y Teléfono',
-      creditAccount: '1.1.2.1 - Bancos Nacionales',
-      amount: 2500,
-      description: 'Pago de servicio de luz mensual',
-      debitCode: '6.7.2.4',
-      creditCode: '1.1.2.1'
-    },
-    {
-      date: today,
-      type: 'pago',
-      debitAccount: '2.3.1.1 - Proveedores Nacionales',
-      creditAccount: '1.1.2.1 - Bancos Nacionales',
-      amount: 8000,
-      description: 'Pago a proveedor por mercancía',
-      debitCode: '2.3.1.1',
-      creditCode: '1.1.2.1'
-    },
-    {
-      date: today,
-      type: 'credito',
-      debitAccount: '1.1.3.1 - Clientes Nacionales',
-      creditAccount: '4.5.1.1 - Ventas Nacionales',
-      amount: 12000,
-      description: 'Venta a crédito a cliente',
-      debitCode: '1.1.3.1',
-      creditCode: '4.5.1.1'
-    },
-    {
-      date: today,
-      type: 'inversion',
-      debitAccount: '1.1.2.1 - Bancos Nacionales',
-      creditAccount: '3.4.1.0 - Capital Social',
-      amount: 50000,
-      description: 'Inversión de accionistas',
-      debitCode: '1.1.2.1',
-      creditCode: '3.4.1.0'
-    },
-    {
-      date: today,
-      type: 'financiamiento',
-      debitAccount: '1.1.2.1 - Bancos Nacionales',
-      creditAccount: '2.3.2.0 - Documentos por Pagar',
-      amount: 100000,
-      description: 'Préstamo bancario recibido',
-      debitCode: '1.1.2.1',
-      creditCode: '2.3.2.0'
-    }
+  // Create a larger realistic tech-store dataset:
+  // - ensure at least 30 distinct tech products in inventory
+  // - for each of the last 12 months create 1..5 purchases and 1..10 sales
+  // deterministic-ish generation using month index to vary quantities/prices
+  const now = new Date();
+  const productsToAdd = [
+    'Smartphone X1','Smartphone X2','Tablet Pro 11','Tablet Lite 8','Laptop Air 13','Laptop Pro 15','Gaming Laptop Z','Ultrabook S','Monitor 24"','Monitor 32"',
+    'Keyboard Mechanical','Keyboard Wireless','Mouse Inalámbrico','Mouse Gaming','Webcam HD','Headphones ANC','Earbuds True Wireless','Smartwatch Series','Fitness Band','Router AC1200',
+    'SSD 500GB','SSD 1TB','HDD 2TB','Power Bank 20000mAh','Charger USB-C','USB-C Cable','HDMI Cable','Docking Station','External GPU','MicroSD 128GB',
+    'Printer Laser','Scanner A4','Projector Mini','NAS 2-Bay','Graphics Tablet'
   ];
 
-  transactions.push(...exampleTransactions);
+  // Make sure base products list contains at least these names (avoid duplicates)
+  productsToAdd.forEach((name, idx) => {
+    const existing = products.find(p => p.name === name);
+    if (!existing) {
+      const id = 'PX' + String(100 + idx);
+      products.push({
+        id,
+        name,
+        price: parseFloat((50 + (idx * 12) + (idx % 7) * 5).toFixed(2)),
+        purchasePrice: parseFloat((30 + (idx * 8) + (idx % 5) * 3).toFixed(2)),
+        stock: Math.floor(5 + (idx % 10)),
+        debitAccount: (name.toLowerCase().includes('laptop') || name.toLowerCase().includes('tablet') || name.toLowerCase().includes('monitor')) ? '1.1.2.1 - Bancos Nacionales' : '1.1.1.1 - Caja General',
+        creditAccount: '4.5.1.1 - Ventas Nacionales'
+      });
+    } else {
+      // increase stock a bit
+      existing.stock = Math.max(existing.stock || 0, 3) + 2;
+    }
+  });
+
+  // Helper to get month strings for last 12 months
+  const months = [];
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 15);
+    months.push({ label: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`, dateRef: d });
+  }
+
+  // For each month produce purchases (1..5) and sales (1..10)
+  months.forEach((m, mi) => {
+    const monthDate = m.dateRef;
+    const monthIsoDay = (day) => {
+      const d = new Date(monthDate.getFullYear(), monthDate.getMonth(), Math.min(28, day));
+      return d.toISOString().split('T')[0];
+    };
+
+    // purchases: 1..5
+    const purchasesCount = 1 + Math.floor(Math.random() * 5);
+    for (let p = 0; p < purchasesCount; p++) {
+      // pick product and qty
+      const prod = products[(mi * 3 + p) % products.length];
+      const qty = 1 + Math.floor(Math.random() * 10);
+      prod.stock = (prod.stock || 0) + qty;
+      const unitPrice = prod.purchasePrice || Math.max(10, Math.round(prod.price * 0.6));
+      const total = parseFloat((unitPrice * qty).toFixed(2));
+      transactions.push({
+        date: monthIsoDay(2 + p),
+        type: 'compra',
+        debitAccount: '1.1.6.1 - Inventario de Productos Terminados',
+        creditAccount: (p % 2 === 0) ? '2.3.1.1 - Proveedores Nacionales' : '1.1.2.1 - Bancos Nacionales',
+        amount: total,
+        description: `Compra ${qty}x ${prod.name} (precio unitario $${formatMoney(unitPrice)})`,
+        debitCode: '1.1.6.1',
+        creditCode: (p % 2 === 0) ? '2.3.1.1' : '1.1.2.1'
+      });
+    }
+
+    // sales: 1..10
+    const salesCount = 1 + Math.floor(Math.random() * 10);
+    for (let s = 0; s < salesCount; s++) {
+      // Prefer selling products with stock; fallback to any product
+      const candidates = products.filter(pr => (pr.stock || 0) > 0);
+      const pickList = candidates.length ? candidates : products;
+      const prod = pickList[(mi * 5 + s) % pickList.length];
+      const qty = Math.min(prod.stock || 1, 1 + Math.floor(Math.random() * 3));
+      // decrement stock
+      prod.stock = Math.max(0, (prod.stock || 0) - qty);
+      const unitSale = prod.price || Math.max(10, Math.round((prod.purchasePrice || 0) * 1.4));
+      const total = parseFloat((unitSale * qty).toFixed(2));
+      const paymentAccount = (s % 3 === 0) ? '1.1.2.1 - Bancos Nacionales' : '1.1.1.1 - Caja General';
+      const tType = (s % 6 === 0) ? 'credito' : 'venta';
+      transactions.push({
+        date: monthIsoDay(5 + s),
+        type: tType,
+        debitAccount: paymentAccount,
+        creditAccount: '4.5.1.1 - Ventas Nacionales',
+        amount: total,
+        description: `Venta ${qty}x ${prod.name} (${tType})`,
+        debitCode: paymentAccount.split(' - ')[0],
+        creditCode: '4.5.1.1'
+      });
+    }
+  });
+
+  // Add some operational transactions to make dataset richer
+  const nowIso = new Date().toISOString().split('T')[0];
+  transactions.push({
+    date: nowIso,
+    type: 'gasto',
+    debitAccount: '6.7.2.3 - Servicios Generales',
+    creditAccount: '1.1.2.1 - Bancos Nacionales',
+    amount: 1200,
+    description: 'Pago mensual de mantenimiento y hosting',
+    debitCode: '6.7.2.3',
+    creditCode: '1.1.2.1'
+  });
+
+  // Refresh UI and persist
   updateTransactionsTable();
+  populateProducts();
   saveToLocalStorage();
-  showNotification('Se agregaron 7 transacciones de ejemplo');
+  showNotification('Se agregaron productos y un conjunto masivo de compras/ventas para pruebas');
 }
 
 function clearExampleTransactions() {
@@ -2706,11 +4411,197 @@ function clearExampleTransactions() {
 }
 
 function confirmClear() {
-  transactions = [];
-  updateTransactionsTable();
-  saveToLocalStorage();
-  hideClearConfirmation();
-  showNotification('Se han eliminado todas las transacciones');
+  // If modal was opened for full data deletion, perform full deletion; otherwise clear only transactions
+  try {
+    if (window._clearConfirmationMode === 'allData') {
+      deleteAllDataConfirmed();
+    } else {
+      // default legacy behavior: clear transactions only
+      transactions = [];
+      updateTransactionsTable();
+      saveToLocalStorage();
+      hideClearConfirmation();
+      showNotification('Se han eliminado todas las transacciones');
+    }
+  } catch (e) {
+    console.error('confirmClear failed', e);
+    hideClearConfirmation();
+    showNotification('No se pudo completar la operación');
+  } finally {
+    // reset mode
+    window._clearConfirmationMode = null;
+  }
+}
+
+/* Actual full-data deletion performed when user confirms in the modal textbox */
+function deleteAllDataConfirmed() {
+  // This function attempts to delete each major data category, verify removal, and report results.
+  const report = {
+    attempted: [],
+    deleted: [],
+    failed: []
+  };
+
+  try {
+    // 1) Transactions
+    try {
+      report.attempted.push('transactions (memory & localStorage)');
+      // clear in-memory
+      transactions = [];
+      window.transactions = transactions;
+      // remove storage
+      localStorage.removeItem('accountingTransactions');
+      // verify
+      const still = localStorage.getItem('accountingTransactions');
+      if (!still) {
+        report.deleted.push('transactions');
+      } else {
+        report.failed.push('transactions');
+      }
+    } catch (e) {
+      console.error('failed clearing transactions', e);
+      report.failed.push('transactions');
+    }
+
+    // 2) Products
+    try {
+      report.attempted.push('products (memory & localStorage)');
+      products = [];
+      window.products = products;
+      localStorage.removeItem('accountingProducts');
+      const still = localStorage.getItem('accountingProducts');
+      if (!still) {
+        report.deleted.push('products');
+      } else {
+        report.failed.push('products');
+      }
+    } catch (e) {
+      console.error('failed clearing products', e);
+      report.failed.push('products');
+    }
+
+    // 3) Temp lists (invoice & purchase)
+    try {
+      report.attempted.push('temporary lists (invoiceItems, purchaseItems)');
+      window.invoiceItems = [];
+      window.purchaseItems = [];
+      try { localStorage.removeItem('accountingInvoiceItems'); } catch(e){}
+      try { localStorage.removeItem('accountingPurchaseItems'); } catch(e){}
+      const inv = localStorage.getItem('accountingInvoiceItems');
+      const pur = localStorage.getItem('accountingPurchaseItems');
+      if (!inv && !pur) {
+        report.deleted.push('temporary lists');
+      } else {
+        report.failed.push('temporary lists');
+      }
+    } catch (e) {
+      console.error('failed clearing temporary lists', e);
+      report.failed.push('temporary lists');
+    }
+
+    // 4) Accounts catalog
+    try {
+      report.attempted.push('accounts catalog (memory & localStorage)');
+      accounts.activo = [];
+      accounts.pasivo = [];
+      accounts.capital = [];
+      accounts.resultados = [];
+      localStorage.removeItem('accountingAccountsCatalog');
+      const still = localStorage.getItem('accountingAccountsCatalog');
+      if (!still) {
+        report.deleted.push('accounts catalog');
+      } else {
+        report.failed.push('accounts catalog');
+      }
+    } catch (e) {
+      console.error('failed clearing accounts catalog', e);
+      report.failed.push('accounts catalog');
+    }
+
+    // 5) Company data
+    try {
+      report.attempted.push('company data (memory & localStorage)');
+      try { localStorage.removeItem('accountingCompany'); } catch(e){}
+      const still = localStorage.getItem('accountingCompany');
+      if (!still) {
+        report.deleted.push('company data');
+      } else {
+        report.failed.push('company data');
+      }
+    } catch (e) {
+      console.error('failed clearing company', e);
+      report.failed.push('company data');
+    }
+
+    // 6) Fallback: try to remove any keys prefixed with 'accounting' to be thorough
+    try {
+      report.attempted.push('cleanup: other accounting.* keys');
+      const keys = Object.keys(localStorage).filter(k => k && k.toLowerCase().startsWith('accounting'));
+      const removed = [];
+      keys.forEach(k => {
+        try { localStorage.removeItem(k); removed.push(k); } catch(e) { console.warn('could not remove', k, e); }
+      });
+      if (removed.length) report.deleted.push(`additional keys: ${removed.join(', ')}`);
+    } catch (e) {
+      console.warn('cleanup keys step failed', e);
+    }
+
+    // Refresh UI regardless of per-item results
+    try {
+      updateTransactionsTable();
+      populateProducts();
+      renderCompanyInfo();
+      updateLedger();
+      updateMajorBook();
+      updateBalance();
+    } catch (uiErr) {
+      console.warn('UI refresh after deletion encountered an error', uiErr);
+    }
+
+    // Build a human-friendly summary
+    const parts = [];
+    parts.push(`<strong>Operación finalizada</strong> — ${new Date().toLocaleString()}`);
+    if (report.deleted.length) parts.push(`<div style="margin-top:8px;"><strong>Eliminado:</strong> ${report.deleted.join(', ')}</div>`);
+    if (report.failed.length) parts.push(`<div style="margin-top:8px; color:#b71c1c;"><strong>No eliminado / Falló:</strong> ${report.failed.join(', ')}</div>`);
+    if (report.attempted.length) parts.push(`<div style="margin-top:8px; color:#555;"><strong>Intentado:</strong> ${report.attempted.join(', ')}</div>`);
+    const summaryHtml = parts.join('');
+
+    // Present the detailed result in the notification modal (longer duration) and console
+    console.info('deleteAllDataConfirmed report:', report);
+    // Use the existing notification modal area to show HTML by setting innerHTML (it is used elsewhere only for plaintext; ensure we set textContent fallback if not allowed)
+    try {
+      const modal = document.getElementById('notificationModal');
+      const content = document.getElementById('notificationContent');
+      const backdrop = document.getElementById('notificationBackdrop');
+      if (modal && content && backdrop) {
+        // show as modal with HTML summary; ensure z-index layering
+        content.innerHTML = summaryHtml;
+        modal.style.display = 'block';
+        backdrop.style.display = 'block';
+        modal.style.zIndex = 2401;
+        backdrop.style.zIndex = 2400;
+        // auto-hide after 10s
+        setTimeout(() => {
+          try { content.innerHTML = ''; hideNotification(); } catch(e){}
+        }, 10000);
+      } else {
+        // fallback to simple notification message
+        showNotification('Operación completada. Revise la consola para detalles.', 6000);
+      }
+    } catch (e) {
+      console.warn('Could not render detailed summary in modal', e);
+      showNotification('Operación completada. Revise la consola para detalles.', 6000);
+    }
+
+    // Close the confirmation modal
+    hideClearConfirmation();
+  } catch (e) {
+    console.error('deleteAllDataConfirmed top-level failed', e);
+    hideClearConfirmation();
+    showNotification('Se produjo un error al intentar eliminar todos los datos; revise la consola para detalles');
+  } finally {
+    window._clearConfirmationMode = null;
+  }
 }
 
 function cancelClear() {
@@ -2720,6 +4611,232 @@ function cancelClear() {
 function hideClearConfirmation() {
   document.getElementById('clearConfirmationModal').style.display = 'none';
   document.getElementById('clearConfirmationBackdrop').style.display = 'none';
+}
+
+/* Confirmation prompt utility: show clear-confirmation modal with a text input where user must type an exact phrase to confirm.
+   message: string shown as instruction; requiredPhrase: exact string (e.g., 'ELIMINAR' or 'REINICIAR'); onConfirm: callback executed after successful confirmation. */
+function promptConfirmation(message, requiredPhrase, onConfirm) {
+  try {
+    const modal = document.getElementById('clearConfirmationModal');
+    const backdrop = document.getElementById('clearConfirmationBackdrop');
+    const content = document.querySelector('.clear-confirmation-content') || document.getElementById('clearConfirmationModal').querySelector('.clear-confirmation-content');
+    if (!modal || !backdrop) {
+      // fallback to native confirm if modal missing
+      if (window.confirm(message + '\n\nEscriba: ' + requiredPhrase)) {
+        try { onConfirm(); } catch(e){ console.warn(e); }
+      }
+      return;
+    }
+
+    // Build dynamic input area inside the modal if not present
+    let input = modal.querySelector('.clear-confirmation-input');
+    if (!input) {
+      input = document.createElement('input');
+      input.type = 'text';
+      input.placeholder = `Escriba "${requiredPhrase}" para confirmar`;
+      input.className = 'clear-confirmation-input';
+      input.style.width = '100%';
+      input.style.padding = '8px';
+      input.style.marginTop = '8px';
+      input.style.border = '1px solid #ddd';
+      input.style.borderRadius = '4px';
+      const btns = modal.querySelector('.buttons');
+      if (btns) {
+        // insert input above buttons
+        modal.insertBefore(input, btns);
+      } else {
+        modal.appendChild(input);
+      }
+    }
+
+    // set message
+    const msgEl = modal.querySelector('.clear-confirmation-content');
+    if (msgEl) msgEl.textContent = message + `\n\nPara confirmar escriba: ${requiredPhrase}`;
+
+    // show modal
+    modal.style.display = 'block';
+    backdrop.style.display = 'block';
+
+    // focus and clear input
+    input.value = '';
+    setTimeout(() => input.focus(), 50);
+
+    // hook up temporary handlers for buttons (find existing "Eliminar" and "Cancelar" buttons)
+    const delBtn = modal.querySelector('.buttons button.btn-danger');
+    const cancelBtn = modal.querySelector('.buttons button.btn-primary');
+
+    // preserve original handlers to restore later if necessary
+    const onConfirmClick = () => {
+      if (input.value.trim() === requiredPhrase) {
+        // hide modal then run callback
+        modal.style.display = 'none';
+        backdrop.style.display = 'none';
+        try { onConfirm(); } catch (e) { console.error('confirm callback failed', e); }
+      } else {
+        showNotification(`Debe escribir exactamente: ${requiredPhrase}`, 3000);
+        input.focus();
+      }
+    };
+
+    const onCancelClick = () => {
+      modal.style.display = 'none';
+      backdrop.style.display = 'none';
+    };
+
+    // attach listeners (remove any previous to avoid duplicates)
+    if (delBtn) {
+      delBtn.onclick = onConfirmClick;
+    }
+    if (cancelBtn) {
+      cancelBtn.onclick = onCancelClick;
+    }
+  } catch (e) {
+    console.warn('promptConfirmation failed', e);
+    // fallback
+    if (window.confirm(message + '\n\nEscriba: ' + requiredPhrase)) {
+      try { onConfirm(); } catch(e) { console.warn(e); }
+    }
+  }
+}
+
+/* Genera Kardex de inventario en PDF: lista por producto los movimientos que contienen el nombre del producto en la descripción */
+function generateKardexPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt' });
+  doc.setFontSize(14);
+  doc.text('Kardex de Inventario', 40, 40);
+  let y = 60;
+
+  // For each product, collect related transactions by matching product name in description
+  products.forEach((p, idx) => {
+    const related = transactions.filter(t => {
+      const desc = (t.description || '').toLowerCase();
+      return desc.includes((p.name || '').toLowerCase());
+    });
+
+    // Also include purchases/ventas where product id might be referenced (fallback)
+    // (not all trans include product id; this is best-effort)
+    if (related.length === 0) return;
+
+    if (y > 700) { doc.addPage(); y = 40; }
+    doc.setFontSize(12);
+    doc.text(`${p.name} — ID: ${p.id} — Stock actual: ${p.stock || 0}`, 40, y);
+    y += 18;
+
+    const rows = related.map(t => {
+      // try to extract quantity from description pattern like "3x Producto" or "3 x"
+      let qty = '';
+      const m = (t.description || '').match(/(\d+)\s*x/);
+      if (m) qty = m[1];
+      const direction = (t.type === 'compra') ? 'Entrada' : (t.type === 'venta' || t.type === 'credito') ? 'Salida' : (t.type === 'devolucion') ? 'Entrada' : t.type;
+      return [t.date, direction, qty, `$${formatMoney(t.amount)}`, t.description || ''];
+    });
+
+    doc.autoTable({
+      startY: y,
+      head: [['Fecha', 'Tipo', 'Cant.', 'Valor', 'Descripción']],
+      body: rows,
+      theme: 'grid',
+      styles: { fontSize: 9 },
+      margin: { left: 40, right: 40 },
+      columnStyles: { 0: { cellWidth: 70 }, 1: { cellWidth: 60 }, 2: { cellWidth: 40 }, 3: { cellWidth: 70 }, 4: { cellWidth: 'auto' } }
+    });
+
+    y = doc.lastAutoTable ? doc.lastAutoTable.finalY + 18 : y + 120;
+    if (y > 700) { doc.addPage(); y = 40; }
+  });
+
+  doc.save('kardex_inventario.pdf');
+  showNotification('PDF de Kardex de Inventario generado exitosamente');
+}
+
+/* Exportar Kardex a Excel (hoja por producto con movimientos encontrados) */
+function exportKardexToExcel() {
+  const wb = XLSX.utils.book_new();
+
+  products.forEach(p => {
+    const related = transactions.filter(t => (t.description || '').toLowerCase().includes((p.name || '').toLowerCase()));
+    if (related.length === 0) return;
+    const data = [['Fecha', 'Tipo', 'Cantidad', 'Valor', 'Descripción']];
+    related.forEach(t => {
+      let qty = '';
+      const m = (t.description || '').match(/(\d+)\s*x/);
+      if (m) qty = m[1];
+      const direction = (t.type === 'compra') ? 'Entrada' : (t.type === 'venta' || t.type === 'credito') ? 'Salida' : (t.type === 'devolucion') ? 'Entrada' : t.type;
+      data.push([t.date, direction, qty, (t.amount || 0).toFixed(2), t.description || '']);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    // ensure sheet name valid and unique
+    const safeName = (p.name || 'Producto').substring(0, 25).replace(/[\[\]\*\/\\\?\:]/g, '');
+    XLSX.utils.book_append_sheet(wb, ws, safeName || `Prod_${p.id}`);
+  });
+
+  XLSX.writeFile(wb, 'kardex_inventario.xlsx');
+  showNotification('Kardex exportado a Excel');
+}
+
+/* New: Existencias de Inventario — PDF y Excel export */
+function generateInventoryExistencePDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt' });
+  doc.setFontSize(14);
+  doc.text('Existencias de Inventario', 40, 40);
+  let y = 64;
+
+  // Table header
+  const rows = products.map(p => {
+    const stock = Number(p.stock || 0);
+    const unitCost = Number(p.purchasePrice || p.price || 0);
+    const totalValue = stock * unitCost;
+    return [p.id || '', p.name || '', String(stock), `$${formatMoney(unitCost)}`, `$${formatMoney(totalValue)}`];
+  });
+
+  if (rows.length === 0) {
+    doc.setFontSize(11);
+    doc.text('No hay productos en el inventario.', 40, y);
+  } else {
+    doc.autoTable({
+      startY: y,
+      head: [['ID', 'Producto', 'Stock', 'Costo Unitario', 'Valor Total']],
+      body: rows,
+      theme: 'grid',
+      styles: { fontSize: 9 },
+      margin: { left: 40, right: 40 },
+      columnStyles: { 0: { cellWidth: 60 }, 1: { cellWidth: 220 }, 2: { cellWidth: 60 }, 3: { cellWidth: 80 }, 4: { cellWidth: 80 } }
+    });
+
+    // totals
+    const totalStock = products.reduce((s, p) => s + (Number(p.stock || 0)), 0);
+    const totalValue = products.reduce((s, p) => s + (Number(p.stock || 0) * Number(p.purchasePrice || p.price || 0)), 0);
+    const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 12 : y + 12;
+    doc.setFontSize(12);
+    doc.text(`Total unidades: ${totalStock}`, 40, finalY);
+    doc.text(`Valor total inventario: $${formatMoney(totalValue)}`, 300, finalY);
+  }
+
+  doc.save('existencias_inventario.pdf');
+  showNotification('PDF de Existencias de Inventario generado exitosamente');
+}
+
+function exportInventoryExistenceToExcel() {
+  const wb = XLSX.utils.book_new();
+  const data = [['ID', 'Producto', 'Stock', 'Costo Unitario', 'Valor Total']];
+  products.forEach(p => {
+    const stock = Number(p.stock || 0);
+    const unitCost = Number(p.purchasePrice || p.price || 0);
+    data.push([p.id || '', p.name || '', stock, unitCost.toFixed(2), (stock * unitCost).toFixed(2)]);
+  });
+
+  // Totals row
+  const totalStock = products.reduce((s, p) => s + (Number(p.stock || 0)), 0);
+  const totalValue = products.reduce((s, p) => s + (Number(p.stock || 0) * Number(p.purchasePrice || p.price || 0)), 0);
+  data.push([]);
+  data.push(['Totales', '', totalStock, '', totalValue.toFixed(2)]);
+
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  XLSX.utils.book_append_sheet(wb, ws, "Existencias");
+  XLSX.writeFile(wb, 'existencias_inventario.xlsx');
+  showNotification('Existencias exportadas a Excel');
 }
 
 function generateLedgerPDF() {
@@ -2921,6 +5038,755 @@ function generateBalancePDF() {
   doc.save('balance_general.pdf');
   showNotification('PDF del Balance General generado exitosamente');
 }
+
+/* Generate Estado de Resultados PDF */
+/* Nuevo: Analizar y generar Estado de Flujos de Efectivo */
+function analyzeCashFlows() {
+  const panel = document.getElementById('cashflowsContent');
+  if (!panel) return;
+  // Simple classification: operaciones (ventas/gastos), inversiones (activos fijos), financiamiento (préstamos/capital)
+  const flows = { operacion: 0, inversion: 0, financiacion: 0 };
+  transactions.forEach(t => {
+    if (!t) return;
+    const type = (t.type || '').toLowerCase();
+    if (type === 'venta' || type === 'credito' || type === 'gasto' || type === 'pago' || type === 'devolucion') {
+      flows.operacion += (type === 'gasto' || type === 'pago') ? -Math.abs(t.amount || 0) : Math.abs(t.amount || 0);
+    } else if (type === 'compra' && (t.debitAccount || '').includes('Activo')) {
+      flows.inversion += -Math.abs(t.amount || 0);
+    } else if (type === 'inversion' || type === 'financiamiento') {
+      flows.financiacion += (type === 'financiamiento') ? Math.abs(t.amount || 0) : 0;
+    } else {
+      // fallback categorize purchases as operating outflows
+      if (type === 'compra') flows.operacion += -Math.abs(t.amount || 0);
+    }
+  });
+
+  panel.innerHTML = `<div style="padding:10px;">
+    <div><strong>Flujo de Operación:</strong> <span style="float:right;">$${formatMoney(flows.operacion)}</span></div>
+    <div style="margin-top:6px;"><strong>Flujo de Inversión:</strong> <span style="float:right;">$${formatMoney(flows.inversion)}</span></div>
+    <div style="margin-top:6px;"><strong>Flujo de Financiación:</strong> <span style="float:right;">$${formatMoney(flows.financiacion)}</span></div>
+    <div style="margin-top:10px; color:#666;">(Clasificación automática básica por tipo de transacción)</div>
+  </div>`;
+  showNotification('Análisis de flujos completado', 2500);
+}
+
+function generateCashFlowsPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt' });
+  doc.setFontSize(14);
+  doc.text('Estado de Flujos de Efectivo', 40, 40);
+
+  // reuse analyzeCashFlows summary calculation
+  let flows = { operacion: 0, inversion: 0, financiacion: 0 };
+  transactions.forEach(t => {
+    if (!t) return;
+    const type = (t.type || '').toLowerCase();
+    if (type === 'venta' || type === 'credito' || type === 'gasto' || type === 'pago' || type === 'devolucion') {
+      flows.operacion += (type === 'gasto' || type === 'pago') ? -Math.abs(t.amount || 0) : Math.abs(t.amount || 0);
+    } else if (type === 'compra' && (t.debitAccount || '').includes('Activo')) {
+      flows.inversion += -Math.abs(t.amount || 0);
+    } else if (type === 'inversion' || type === 'financiamiento') {
+      flows.financiacion += (type === 'financiamiento') ? Math.abs(t.amount || 0) : 0;
+    } else {
+      if (type === 'compra') flows.operacion += -Math.abs(t.amount || 0);
+    }
+  });
+
+  const rows = [
+    ['Flujo de Operación', `$${formatMoney(flows.operacion)}`],
+    ['Flujo de Inversión', `$${formatMoney(flows.inversion)}`],
+    ['Flujo de Financiación', `$${formatMoney(flows.financiacion)}`],
+    ['Flujo Neto del Periodo', `$${formatMoney(flows.operacion + flows.inversion + flows.financiacion)}`]
+  ];
+
+  doc.autoTable({
+    startY: 70,
+    head: [['Concepto', 'Monto']],
+    body: rows,
+    theme: 'grid',
+    styles: { fontSize: 10 },
+    margin: { left: 40, right: 40 }
+  });
+
+  doc.save('estado_flujos_efectivo.pdf');
+  showNotification('PDF de Flujos de Efectivo generado');
+}
+
+/* Nuevo: Generar Estado de Resultados Integrales (resumen básico) */
+function buildComprehensiveResults() {
+  const panel = document.getElementById('comprehensiveContent');
+  if (!panel) return;
+
+  // Reuse results calculation
+  const balances = {};
+  transactions.forEach(t => {
+    if (!balances[t.debitAccount]) balances[t.debitAccount] = 0;
+    if (!balances[t.creditAccount]) balances[t.creditAccount] = 0;
+    balances[t.debitAccount] += t.amount;
+    balances[t.creditAccount] -= t.amount;
+  });
+
+  let totalIngresos = 0, totalCostos = 0, totalGastos = 0;
+  Object.entries(balances).forEach(([account, balance]) => {
+    if (!accounts.resultados.includes(account)) return;
+    const lower = account.toLowerCase();
+    if (lower.includes('ventas') || lower.includes('ingresos')) totalIngresos += balance;
+    else if (lower.includes('costo')) totalCostos += balance;
+    else totalGastos += balance;
+  });
+
+  const resultadoNeto = Math.abs(totalIngresos) - Math.abs(totalCostos) - Math.abs(totalGastos);
+
+  // For "otros resultados integrales" we provide a placeholder using any accounts that contain "otros ingresos" / "otros gastos"
+  const otros = Object.entries(balances).filter(([acc]) => acc.toLowerCase().includes('otros')).reduce((s,[,v])=>s+v,0);
+
+  panel.innerHTML = `<div style="padding:10px;">
+    <div><strong>Resultado Neto:</strong> <span style="float:right;">$${formatMoney(resultadoNeto)}</span></div>
+    <div style="margin-top:6px;"><strong>Otros resultados integrales (resumen):</strong> <span style="float:right;">$${formatMoney(otros)}</span></div>
+    <div style="margin-top:10px; color:#666;">Total Resultado Integral: <strong>$${formatMoney(resultadoNeto + otros)}</strong></div>
+  </div>`;
+  showNotification('Estado de Resultados Integrales preparado', 2200);
+}
+
+function generateComprehensiveResultsPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt' });
+  doc.setFontSize(14);
+  doc.text('Estado de Resultados Integrales', 40, 40);
+
+  // Reuse buildComprehensiveResults calculations for consistency
+  const balances = {};
+  transactions.forEach(t => {
+    if (!balances[t.debitAccount]) balances[t.debitAccount] = 0;
+    if (!balances[t.creditAccount]) balances[t.creditAccount] = 0;
+    balances[t.debitAccount] += t.amount;
+    balances[t.creditAccount] -= t.amount;
+  });
+
+  let totalIngresos = 0, totalCostos = 0, totalGastos = 0;
+  Object.entries(balances).forEach(([account, balance]) => {
+    if (!accounts.resultados.includes(account)) return;
+    const lower = account.toLowerCase();
+    if (lower.includes('ventas') || lower.includes('ingresos')) totalIngresos += balance;
+    else if (lower.includes('costo')) totalCostos += balance;
+    else totalGastos += balance;
+  });
+  const resultadoNeto = Math.abs(totalIngresos) - Math.abs(totalCostos) - Math.abs(totalGastos);
+  const otros = Object.entries(balances).filter(([acc]) => acc.toLowerCase().includes('otros')).reduce((s,[,v])=>s+v,0);
+  const totalIntegral = resultadoNeto + otros;
+
+  const rows = [
+    ['Resultado Neto', `$${formatMoney(resultadoNeto)}`],
+    ['Otros resultados integrales', `$${formatMoney(otros)}`],
+    ['Total Resultado Integral', `$${formatMoney(totalIntegral)}`]
+  ];
+
+  doc.autoTable({
+    startY: 70,
+    head: [['Concepto', 'Monto']],
+    body: rows,
+    theme: 'grid',
+    styles: { fontSize: 10 },
+    margin: { left: 40, right: 40 }
+  });
+
+  doc.save('estado_resultados_integrales.pdf');
+  showNotification('PDF de Resultados Integrales generado');
+}
+
+/* Original generateResultsPDF remains unchanged below */
+function generateResultsPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.setFontSize(16);
+  doc.text('Estado de Resultados', 14, 15);
+
+  // Compute balances for resultado accounts
+  const balances = {};
+  transactions.forEach(t => {
+    if (!balances[t.debitAccount]) balances[t.debitAccount] = 0;
+    if (!balances[t.creditAccount]) balances[t.creditAccount] = 0;
+    balances[t.debitAccount] += t.amount;
+    balances[t.creditAccount] -= t.amount;
+  });
+
+  const rows = [];
+  let totalIngresos = 0;
+  let totalCostos = 0;
+  let totalGastos = 0;
+
+  Object.entries(balances).forEach(([account, balance]) => {
+    if (balance === 0) return;
+    if (accounts.resultados.includes(account)) {
+      const lower = account.toLowerCase();
+      rows.push([account, `$${formatMoney(Math.abs(balance))}`]);
+      if (lower.includes('ventas') || lower.includes('ingresos')) totalIngresos += balance;
+      else if (lower.includes('costo') || lower.includes('costo de ventas')) totalCostos += balance;
+      else totalGastos += balance;
+    }
+  });
+
+  rows.push([]);
+  rows.push(['Total Ingresos', `$${formatMoney(Math.abs(totalIngresos))}`]);
+  rows.push(['Total Costos', `$${formatMoney(Math.abs(totalCostos))}`]);
+  rows.push(['Total Gastos', `$${formatMoney(Math.abs(totalGastos))}`]);
+  const netResult = (Math.abs(totalIngresos) - Math.abs(totalCostos) - Math.abs(totalGastos));
+  rows.push(['Resultado Neto', `$${formatMoney(netResult)}`]);
+
+  doc.autoTable({
+    startY: 25,
+    head: [['Cuenta', 'Monto']],
+    body: rows,
+    theme: 'grid',
+    styles: { fontSize: 9 }
+  });
+
+  doc.save('estado_de_resultados.pdf');
+  showNotification('PDF del Estado de Resultados generado exitosamente');
+}
+
+/* Dashboard charts rendering using Chart.js */
+let _inventoryChart = null;
+let _salesChart = null;
+let _summaryChart = null;
+
+function buildInventoryData() {
+  const labels = products.map(p => p.name || p.id);
+  const stocks = products.map(p => Number(p.stock || 0));
+  const values = products.map(p => Number(p.stock || 0) * Number(p.purchasePrice || p.price || 0));
+  return { labels, stocks, values };
+}
+
+function buildSalesData(limit = 12, monthFilter = 'all') {
+  // aggregate transactions of type venta/credito, optionally filtered by monthFilter ('YYYY-MM' or 'all')
+  const sales = (transactions || []).filter(t => (t.type === 'venta' || t.type === 'credito') && (monthFilter === 'all' || (t.date && String(t.date).startsWith(monthFilter))));
+  const grouped = {};
+  sales.forEach(t => {
+    if (!t || !t.date) return;
+    const d = new Date(t.date);
+    if (isNaN(d)) return;
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    grouped[key] = (grouped[key] || 0) + Number(t.amount || 0);
+  });
+  // sort month keys asc and take last `limit`
+  const months = Object.keys(grouped).sort();
+  const picked = months.slice(-limit);
+  const amounts = picked.map(m => grouped[m]);
+  // if no monthly grouping available, fallback to daily aggregation (respecting monthFilter)
+  if (picked.length === 0) {
+    const fallback = {};
+    (transactions || []).filter(t => (t.type === 'venta' || t.type === 'credito') && (monthFilter === 'all' || (t.date && String(t.date).startsWith(monthFilter))))
+      .forEach(t => {
+        const k = t.date || '';
+        fallback[k] = (fallback[k] || 0) + Number(t.amount || 0);
+      });
+    const dates = Object.keys(fallback).sort();
+    const pickedDates = dates.slice(-limit);
+    return { labels: pickedDates, amounts: pickedDates.map(d => fallback[d]) };
+  }
+  return { labels: picked, amounts };
+}
+
+function renderDashboardCharts() {
+  try {
+    // Only render dashboard charts when the dashboard tab is active
+    const dashboardSection = document.getElementById('dashboard');
+    if (!dashboardSection || !dashboardSection.classList.contains('active')) return;
+
+    // read month filter (format 'YYYY-MM' or 'all')
+    const monthSel = document.getElementById('dashboardMonthFilter');
+    const monthVal = monthSel ? monthSel.value : 'all';
+
+    // Ensure canvases keep fixed pixel sizes to avoid layout feedback loops
+    const invCanvas = document.getElementById('inventoryChart');
+    const salesCanvas = document.getElementById('salesChart');
+    const purchasesCanvas = document.getElementById('purchasesChart');
+    const sumCanvas = document.getElementById('summaryChart');
+
+    // Explicitly set canvas width/height to match CSS fixed size (device pixel ratio handled by Chart.js internally)
+    [invCanvas, salesCanvas, purchasesCanvas, sumCanvas].forEach(c => {
+      if (!c) return;
+      c.style.width = '100%';
+      c.style.height = '240px';
+      c.width = c.clientWidth;
+      c.height = 240;
+    });
+
+    // inventory chart -> doughnut with two concentric datasets: values (outer) and units (inner)
+    const inv = buildInventoryData();
+    const invCtx = invCanvas ? invCanvas.getContext('2d') : null;
+    if (invCtx) {
+      if (_inventoryChart) _inventoryChart.destroy();
+      const invValues = inv.values.map(v => Number(v) || 0);
+      const invUnits = inv.stocks.map(s => Number(s) || 0);
+      const invLabels = inv.labels.slice();
+      const paletteOuter = ['#3498db','#2ecc71','#e67e22','#9b59b6','#f1c40f','#e74c3c','#1abc9c','#95a5a6'];
+      const paletteInner = ['#bddcf7','#c9f0db','#f9e1c7','#ead7f6','#fff4cc','#f9d7d7','#d7f6ec','#eceff1'];
+      _inventoryChart = new Chart(invCtx, {
+        type: 'doughnut',
+        data: {
+          labels: invLabels,
+          datasets: [
+            { label: 'Valor (monetario)', data: invValues, backgroundColor: invLabels.map((_,i)=>paletteOuter[i % paletteOuter.length]), hoverOffset: 6, weight: 1 },
+            { label: 'Unidades (cantidad)', data: invUnits, backgroundColor: invLabels.map((_,i)=>paletteInner[i % paletteInner.length]), hoverOffset: 4, weight: 0.5 }
+          ]
+        },
+        options: { responsive: false, maintainAspectRatio: true, plugins: { legend: { position: 'right' }, tooltip: { callbacks: { label: function(context){ const dsLabel = context.dataset.label||''; const val = context.parsed||0; return (context.datasetIndex||0)===0 ? dsLabel+': $'+formatMoney(Number(val)) : dsLabel+': '+Number(val); } } } } }
+      });
+    }
+
+    // sales chart -> pie (filtered by selected month)
+    const sales = buildSalesData(12, monthVal);
+    const salesCtx = salesCanvas ? salesCanvas.getContext('2d') : null;
+    if (salesCtx) {
+      if (_salesChart) _salesChart.destroy();
+      const salesLabels = sales.labels.length ? sales.labels : ['Sin ventas'];
+      const salesData = sales.amounts.length ? sales.amounts.map(a => Number(a) || 0) : [1];
+      const palette2 = ['#e67e22','#f1c40f','#3498db','#2ecc71','#9b59b6','#95a5a6'];
+      _salesChart = new Chart(salesCtx, {
+        type: 'pie',
+        data: { labels: salesLabels, datasets: [{ data: salesData, backgroundColor: salesLabels.map((_,i)=>palette2[i % palette2.length]) }] },
+        options: { responsive: false, maintainAspectRatio: true, plugins: { legend: { position: 'right' } } }
+      });
+    }
+
+    // purchases chart -> pie (filtered by selected month)
+    const purchaseTx = (transactions || []).filter(t => t.type === 'compra' && (monthVal === 'all' || (t.date && String(t.date).startsWith(monthVal))));
+    // aggregate by month key
+    const purchasesGrouped = {};
+    purchaseTx.forEach(t => {
+      const d = t.date ? new Date(t.date) : null;
+      const key = d && !isNaN(d) ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` : (t.date || 'sin-fecha');
+      purchasesGrouped[key] = (purchasesGrouped[key] || 0) + Number(t.amount || 0);
+    });
+    const purchasesLabelsArr = Object.keys(purchasesGrouped).sort();
+    const purchasesAmountsArr = purchasesLabelsArr.map(k => purchasesGrouped[k] || 0);
+    const purchasesCtx = purchasesCanvas ? purchasesCanvas.getContext('2d') : null;
+    if (purchasesCtx) {
+      if (window._purchasesChart) try { window._purchasesChart.destroy(); } catch(e){}
+      const plabels = purchasesLabelsArr.length ? purchasesLabelsArr : ['Sin compras'];
+      const pdata = purchasesAmountsArr.length ? purchasesAmountsArr : [0];
+      const paletteP = ['#9b59b6','#f39c12','#95a5a6','#3498db','#2ecc71','#e67e22'];
+      window._purchasesChart = new Chart(purchasesCtx, {
+        type: 'pie',
+        data: { labels: plabels, datasets: [{ data: pdata, backgroundColor: plabels.map((_,i)=>paletteP[i % paletteP.length]) }] },
+        options: { responsive: false, maintainAspectRatio: true, plugins: { legend: { position: 'right' } } }
+      });
+    }
+
+    // summary chart -> pie (top product sales within selected month or inventory value if none)
+    const salesByProduct = {};
+    (transactions || []).filter(t => (t.type === 'venta' || t.type === 'credito') && (monthVal === 'all' || (t.date && String(t.date).startsWith(monthVal))))
+      .forEach(t => {
+        const desc = (t.description || '').toLowerCase();
+        products.forEach(p => {
+          if (desc.includes((p.name || '').toLowerCase())) {
+            salesByProduct[p.name] = (salesByProduct[p.name] || 0) + Number(t.amount || 0);
+          }
+        });
+      });
+
+    let summaryLabels = [];
+    let summaryData = [];
+    if (Object.keys(salesByProduct).length > 0) {
+      const entries = Object.entries(salesByProduct).sort((a,b)=>b[1]-a[1]).slice(0,6);
+      summaryLabels = entries.map(e=>e[0]);
+      summaryData = entries.map(e=>e[1]);
+    } else {
+      const invVals = products.map(p => ({ name: p.name || p.id, val: (Number(p.stock||0) * Number(p.purchasePrice || p.price || 0)) }));
+      const top = invVals.sort((a,b)=>b.val-a.val).slice(0,6);
+      summaryLabels = top.map(t => t.name);
+      summaryData = top.map(t => t.val);
+    }
+
+    const sumCtx = sumCanvas ? sumCanvas.getContext('2d') : null;
+    if (sumCtx) {
+      if (_summaryChart) _summaryChart.destroy();
+      const colors = ['#3498db','#2ecc71','#e67e22','#9b59b6','#f1c40f','#e74c3c'];
+      _summaryChart = new Chart(sumCtx, {
+        type: 'pie',
+        data: { labels: summaryLabels, datasets: [{ data: summaryData.map(v => Number(v) || 0), backgroundColor: summaryLabels.map((_,i)=>colors[i % colors.length]) }] },
+        options: { responsive: false, maintainAspectRatio: true, plugins: { legend: { position: 'right' } } }
+      });
+    }
+  } catch (err) {
+    console.warn('Dashboard render failed', err);
+  }
+}
+
+// ensure dashboard charts render on initial load if user opens Dashboard
+document.addEventListener('DOMContentLoaded', () => {
+  // wire: re-render dashboard when products or transactions change via saved functions
+  // call once to prepare canvases (no-op if not visible)
+  renderDashboardCharts();
+
+  // populate month filters (last 12 months plus 'all')
+  function buildMonthOptions(selId) {
+    const sel = document.getElementById(selId);
+    if (!sel) return;
+    // clear except 'all'
+    const existing = sel.querySelectorAll('option');
+    if (existing.length > 1) Array.from(existing).forEach((o,i)=>{ if (i>0) o.remove(); });
+    const now = new Date();
+    for (let i=0;i<12;i++) {
+      const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+      const val = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      const label = d.toLocaleString(undefined, { month: 'short', year: 'numeric' });
+      const opt = new Option(label, val);
+      sel.add(opt);
+    }
+  }
+
+  ['dashboardMonthFilter','salesMonthFilter','purchasesMonthFilter','purchasesListMonthFilter','transactionsMonthFilter','ledgerMonthFilter','majorBookMonthFilter','balanceMonthFilter'].forEach(buildMonthOptions);
+
+  // Small section chart rendering: uses Chart.js to show a compact, meaningful metric per section filtered by month
+  const miniCharts = {}; // store Chart instances by id
+
+  window.renderSectionCharts = function(section) {
+    try {
+      // Only render section mini-chart when its section is active (prevents drawing charts "fuera" de apartados)
+      const sectionMap = {
+        sales: 'sales',
+        purchases: 'purchases',
+        transactions: 'transactions',
+        ledger: 'ledger',
+        majorBook: 'majorBook',
+        balance: 'balance',
+        dashboard: 'dashboard'
+      };
+      const sectionId = sectionMap[section] || 'dashboard';
+      const sectionEl = document.getElementById(sectionId);
+      if (!sectionEl || !sectionEl.classList.contains('active')) return;
+
+      // determine filter value
+      const mapping = {
+        sales: 'salesMonthFilter',
+        purchases: 'purchasesMonthFilter',
+        transactions: 'transactionsMonthFilter',
+        ledger: 'ledgerMonthFilter',
+        majorBook: 'majorBookMonthFilter',
+        balance: 'balanceMonthFilter',
+        dashboard: 'dashboardMonthFilter'
+      };
+      const selId = mapping[section] || mapping.dashboard;
+      const sel = document.getElementById(selId);
+      const monthVal = sel ? sel.value : 'all';
+
+      // helper to check date membership
+      function inMonth(dateStr, monthVal) {
+        if (!dateStr) return false;
+        if (monthVal === 'all') return true;
+        const d = new Date(dateStr);
+        const ym = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        return ym === monthVal;
+      }
+
+      // prepare data depending on section
+      let labels = [];
+      let data = [];
+      let title = '';
+      if (section === 'sales') {
+        title = 'Ventas (monto)';
+        // aggregate by month (YYYY-MM) when possible, otherwise respect exact date filter
+        const grouped = {};
+        (transactions || []).filter(t => (t.type === 'venta' || t.type === 'credito') && inMonth(t.date, monthVal))
+          .forEach(t => {
+            const d = t.date ? new Date(t.date) : null;
+            if (d && !isNaN(d)) {
+              const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+              grouped[key] = (grouped[key] || 0) + Number(t.amount || 0);
+            } else {
+              const key = t.date || 'sin-fecha';
+              grouped[key] = (grouped[key] || 0) + Number(t.amount || 0);
+            }
+          });
+        labels = Object.keys(grouped).sort();
+        // show up to last 12 months/dates to ensure full visibility
+        labels = labels.slice(-12);
+        data = labels.map(d => grouped[d] || 0);
+        if (labels.length === 0) { labels = ['Sin datos']; data = [0]; }
+      } else if (section === 'purchases') {
+        title = 'Compras (monto)';
+        const grouped = {};
+        (transactions || []).filter(t => t.type === 'compra' && inMonth(t.date, monthVal))
+          .forEach(t => {
+            const d = t.date ? new Date(t.date) : null;
+            if (d && !isNaN(d)) {
+              const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+              grouped[key] = (grouped[key] || 0) + Number(t.amount || 0);
+            } else {
+              const key = t.date || 'sin-fecha';
+              grouped[key] = (grouped[key] || 0) + Number(t.amount || 0);
+            }
+          });
+        labels = Object.keys(grouped).sort();
+        labels = labels.slice(-12);
+        data = labels.map(d => grouped[d] || 0);
+        if (labels.length === 0) { labels = ['Sin datos']; data = [0]; }
+      } else if (section === 'transactions') {
+        title = 'Transacciones (conteo)';
+        const grouped = {};
+        (transactions || []).filter(t => inMonth(t.date, monthVal))
+          .forEach(t => {
+            const d = t.date ? new Date(t.date) : null;
+            if (d && !isNaN(d)) {
+              const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+              grouped[key] = (grouped[key] || 0) + 1;
+            } else {
+              const key = t.date || 'sin-fecha';
+              grouped[key] = (grouped[key] || 0) + 1;
+            }
+          });
+        labels = Object.keys(grouped).sort();
+        labels = labels.slice(-12);
+        data = labels.map(d => grouped[d] || 0);
+        if (labels.length === 0) { labels = ['Sin datos']; data = [0]; }
+      } else if (section === 'ledger' || section === 'majorBook') {
+        title = 'Movimientos (monto)';
+        const grouped = {};
+        transactions.filter(t => inMonth(t.date, monthVal))
+                    .forEach(t => { grouped[t.date] = (grouped[t.date]||0) + Number(t.amount||0); });
+        labels = Object.keys(grouped).slice(-6);
+        data = labels.map(d => grouped[d]);
+        if (labels.length === 0) { labels = ['Sin datos']; data = [0]; }
+      } else if (section === 'balance') {
+        title = 'Activos vs Pasivo+Capital';
+        // calculate totals for month
+        const balances = {};
+        transactions.filter(t => inMonth(t.date, monthVal)).forEach(t => {
+          balances[t.debitAccount] = (balances[t.debitAccount]||0) + Number(t.amount||0);
+          balances[t.creditAccount] = (balances[t.creditAccount]||0) - Number(t.amount||0);
+        });
+        let totalAct = 0, totalPasCap = 0;
+        Object.entries(balances).forEach(([acc,val])=>{
+          if (accounts.activo.includes(acc)) totalAct += val;
+          if (accounts.pasivo.includes(acc) || accounts.capital.includes(acc) || accounts.resultados.includes(acc)) totalPasCap += Math.abs(val);
+        });
+        labels = ['Activos','Pasivo+Capital'];
+        data = [Math.max(0,totalAct), Math.max(0,totalPasCap)];
+      } else if (section === 'dashboard') {
+        title = 'Inventario Valor (mes)';
+        const grouped = {};
+        // inventory value per product at period (approx using current stock * purchasePrice) filtered by month: show top values
+        const vals = products.map(p => ({ name: p.name, val: Number(p.stock||0) * Number(p.purchasePrice || p.price || 0)}));
+        const top = vals.sort((a,b)=>b.val-a.val).slice(0,6);
+        labels = top.map(t=>t.name);
+        data = top.map(t=>t.val);
+        if (labels.length === 0) { labels = ['Sin datos']; data = [0]; }
+      }
+
+      // map section to canvas id
+      const canvasMap = {
+        sales: 'salesMiniChart',
+        purchases: 'purchasesMiniChart',
+        transactions: 'transactionsMiniChart',
+        ledger: 'ledgerMiniChart',
+        majorBook: 'majorBookMiniChart',
+        balance: 'balanceMiniChart',
+        dashboard: 'dashboardMiniChart'
+      };
+      const canvasId = canvasMap[section] || 'dashboardMiniChart';
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+
+      // destroy existing chart
+      if (miniCharts[canvasId]) {
+        try { miniCharts[canvasId].destroy(); } catch(e){/*ignore*/ }
+        miniCharts[canvasId] = null;
+      }
+
+      const ctx = canvas.getContext('2d');
+      // choose pie for balance/dashboard, bar for others
+      const isPie = (section === 'dashboard');
+      const palette = ['#3498db','#2ecc71','#e67e22','#9b59b6','#f1c40f','#e74c3c'];
+      miniCharts[canvasId] = new Chart(ctx, {
+        type: isPie ? 'pie' : 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: title,
+            data: data.map(v=>Number(v)||0),
+            backgroundColor: labels.map((_,i)=>palette[i % palette.length])
+          }]
+        },
+        options: {
+          responsive: false,
+          maintainAspectRatio: true,
+          plugins: { legend: { display: isPie } },
+          scales: isPie ? {} : { x: { display: false }, y: { display: false } }
+        }
+      });
+    } catch (err) {
+      console.warn('renderSectionCharts failed', err);
+    }
+  };
+
+  // Initially render mini-charts for all sections (excluding removed dashboard mini-chart)
+  ['sales','purchases','transactions','ledger','majorBook','balance'].forEach(s => {
+    try { renderSectionCharts(s); } catch(e){ console.warn(e); }
+  });
+
+  // --- Funciones: renderizado y filtrado del listado de Compras Registradas ---
+  function renderPurchasesList() {
+    const tbody = document.querySelector('#purchasesListTable tbody');
+    const subtotalEl = document.getElementById('purchasesListSubtotal');
+    const summaryEl = document.getElementById('purchasesListSummary');
+    if (!tbody || !subtotalEl || !summaryEl) return;
+    tbody.innerHTML = '';
+    const monthVal = (document.getElementById('purchasesListMonthFilter') || {}).value || 'all';
+
+    // Coerce transactions to an array: prefer the in-scope `transactions` variable, then fall back to window.transactions or structured payloads
+    const tx = (typeof transactions !== 'undefined' && Array.isArray(transactions))
+      ? transactions
+      : (Array.isArray(window.transactions)
+        ? window.transactions
+        : (window.transactions && window.transactions.data && Array.isArray(window.transactions.data.transactions)
+          ? window.transactions.data.transactions
+          : []));
+
+    // filter transactions of type 'compra' by month
+    const filtered = tx.filter(t => {
+      if (!t || t.type !== 'compra') return false;
+      if (monthVal === 'all') return true;
+      const matches = String(t.date || '').match(/(\d{4})-(\d{2})/);
+      if (matches) return `${matches[1]}-${matches[2]}` === monthVal;
+      const parsed = new Date(t.date);
+      if (!isNaN(parsed)) {
+        return `${parsed.getFullYear()}-${String(parsed.getMonth()+1).padStart(2,'0')}` === monthVal;
+      }
+      return false;
+    }).sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+
+    let subtotal = 0;
+    filtered.forEach(t => {
+      const row = tbody.insertRow();
+      row.innerHTML = `
+        <td style="padding:8px;">${t.date || ''}</td>
+        <td style="padding:8px;">${escapeHtml(t.description || '')}</td>
+        <td style="padding:8px; text-align:right;">$${formatMoney(Number(t.amount || 0))}</td>
+      `;
+      subtotal += Number(t.amount || 0);
+    });
+
+    subtotalEl.textContent = `$${formatMoney(subtotal)}`;
+    summaryEl.textContent = `Total items: ${filtered.length}`;
+  }
+
+  function exportPurchasesToExcel() {
+    // simple export of currently filtered purchases
+    const monthVal = (document.getElementById('purchasesListMonthFilter') || {}).value || 'all';
+
+    // Coerce transactions to an array if needed
+    const tx = Array.isArray(window.transactions)
+      ? window.transactions
+      : (window.transactions && window.transactions.data && Array.isArray(window.transactions.data.transactions))
+        ? window.transactions.data.transactions
+        : [];
+
+    const filtered = tx.filter(t => {
+      if (!t || t.type !== 'compra') return false;
+      if (monthVal === 'all') return true;
+      const matches = String(t.date || '').match(/(\d{4})-(\d{2})/);
+      if (matches) return `${matches[1]}-${matches[2]}` === monthVal;
+      const parsed = new Date(t.date);
+      if (!isNaN(parsed)) {
+        return `${parsed.getFullYear()}-${String(parsed.getMonth()+1).padStart(2,'0')}` === monthVal;
+      }
+      return false;
+    });
+
+    const data = [['Fecha','Descripción','Cuenta Debe','Cuenta Haber','Monto']];
+    filtered.forEach(f => data.push([f.date || '', f.description || '', f.debitAccount || '', f.creditAccount || '', (Number(f.amount)||0).toFixed(2)]));
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, 'Compras');
+    XLSX.writeFile(wb, `compras_${monthVal || 'all'}.xlsx`);
+  }
+
+  // Wire purchases list filter controls
+  const purchasesListRefresh = document.getElementById('refreshPurchasesList');
+  if (purchasesListRefresh) purchasesListRefresh.addEventListener('click', renderPurchasesList);
+  const purchasesListFilter = document.getElementById('purchasesListMonthFilter');
+  if (purchasesListFilter) purchasesListFilter.addEventListener('change', renderPurchasesList);
+
+  // populate purchases list month options to match others
+  try { buildMonthOptions('purchasesListMonthFilter'); } catch(e){/*ignore*/}
+
+  // ensure the purchases list is rendered when transactions/product sets change
+  // hook into existing update routines by wrapping updateTransactionsTable to also refresh purchases list
+  const origUpdateTransactionsTable = window.updateTransactionsTable;
+  if (typeof origUpdateTransactionsTable === 'function') {
+    window.updateTransactionsTable = function() {
+      try { origUpdateTransactionsTable(); } catch(e) { console.warn(e); }
+      try { renderPurchasesList(); } catch(e) { console.warn(e); }
+    };
+  } else {
+    // fallback: just render once
+    setTimeout(renderPurchasesList, 300);
+  }
+});
+
+</script>
+
+<script>
+  // Update the small report widgets under Reportes section.
+  function updateReportPanel() {
+    try {
+      // inventory total value (stock * purchasePrice)
+      const invTotal = (window.products || []).reduce((s, p) => {
+        const stock = Number(p.stock || 0);
+        const unitCost = Number(p.purchasePrice !== undefined ? p.purchasePrice : (p.price || 0));
+        return s + (stock * unitCost);
+      }, 0);
+      const invEl = document.getElementById('inventoryReportAmount');
+      if (invEl) invEl.textContent = '$' + formatMoney(Number(invTotal || 0));
+
+      // catalog total accounts
+      const totalAccounts = (accounts && (accounts.activo || []).length ? accounts.activo.length : 0)
+        + (accounts && (accounts.pasivo || []).length ? accounts.pasivo.length : 0)
+        + (accounts && (accounts.capital || []).length ? accounts.capital.length : 0)
+        + (accounts && (accounts.resultados || []).length ? accounts.resultados.length : 0);
+      const catEl = document.getElementById('catalogReportCount');
+      if (catEl) catEl.textContent = String(totalAccounts);
+
+      // company info state
+      const comp = loadCompanyFromLocalStorage();
+      const compEl = document.getElementById('companyReportInfo');
+      if (compEl) {
+        if (comp && comp.name) {
+          compEl.textContent = (comp.name.length > 28 ? comp.name.slice(0,25) + '...' : comp.name);
+        } else {
+          compEl.textContent = 'No guardada';
+        }
+      }
+    } catch (e) {
+      console.warn('updateReportPanel failed', e);
+    }
+  }
+
+  // ensure the report panel refreshes when the DOM is ready and periodically after big operations
+  document.addEventListener('DOMContentLoaded', () => {
+    try { updateReportPanel(); } catch(e){}
+  });
+
+  // also try to refresh after key operations may change data
+  const _origSaveCompany = window.saveCompany || null;
+  window.saveCompany = function() {
+    try {
+      if (typeof _origSaveCompany === 'function') _origSaveCompany();
+    } catch(e) {}
+    try { updateReportPanel(); } catch(e){}
+  };
+
+  // When backup/import or major dataset changes occur, update widgets
+  const _origPopulateProducts = window.populateProducts || null;
+  if (typeof _origPopulateProducts === 'function') {
+    window.populateProducts = function() { try { _origPopulateProducts(); } catch(e){}; try { updateReportPanel(); } catch(e){}; };
+  }
+
+  // light fallback: refresh widgets periodically while app runs to keep values current
+  setInterval(() => { try { updateReportPanel(); } catch(e){} }, 5000);
 </script>
 
 <!-- Security & performance module that patches storage, notification and sanitization -->
